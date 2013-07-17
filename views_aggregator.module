@@ -1,0 +1,202 @@
+<?php
+/**
+ * @file
+ * views_aggregator.module
+ *
+ * Module implementig post-query aggregation functions for Views tables.
+ */
+
+require_once 'views/views_aggregator_functions.inc';
+//require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'views_aggregator') . 'views/views_aggregator_functions.inc';
+
+/**
+ * Implements hook_help().
+ */
+function views_aggregator_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#views_aggregator':
+      return t('See the <a href="@README">README</a> for View configuration instructions and examples or browse the <a href="@project">project</a> support queue.', array(
+        '@project' => url('http://drupal.org/project/views_aggregator'),
+        '@README' => url(drupal_get_path('module', 'views_aggregator') . '/README.txt'),
+      ));
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function views_aggregator_theme() {
+  $base_path = drupal_get_path('module', 'views_aggregator');
+  $themes = array(
+    'views_aggregator_plugin_style_table' => array(
+      // Pass $form to theme_views_aggregator_plugin_style_table($vars)
+      'render element' => 'form',
+      'path' =>  $base_path . '/views',
+      'file' => 'theme_views_aggregator_plugin_style_table.inc',
+    ),
+  );
+  return $themes;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function views_aggregator_views_api() {
+  return array(
+    'api' => views_api_version(),
+    'path' => drupal_get_path('module', 'views_aggregator') . '/views',
+  );
+}
+
+/**
+ * Get all avaialble aggregation function definitions.
+ *
+ * @param string name
+ *   The name of the desired function or NULL to retrieve an array of functions.
+ *
+ * @return array
+ *   An array of aggregation function parameters.
+ */
+function views_aggregator_get_aggregation_functions_info($name = NULL) {
+
+  $aggregation_functions = &drupal_static(__FUNCTION__);
+
+  if (empty($aggregation_functions)) {
+    // Collect aggregations functions defined in other modules via their
+    // hook_views_aggregation_functions_info() implementations.
+    $aggregation_functions = module_invoke_all('views_aggregation_functions_info');
+
+    // Let other modules alter the aggregation functions by implementing
+    // hook_views_aggregation_functions_alter().
+    drupal_alter('views_aggregation_functions_info', $aggregation_functions);
+  }
+  //$aggregation_functions = (array)$aggregation_functions;
+  if (empty($name)) {
+    return $aggregation_functions;
+  }
+  if (isset($aggregation_functions[$name])) {
+    return $aggregation_functions[$name];
+  }
+}
+
+/**
+ * Returns the result value at the intersection of column and row.
+ *
+ * @param object $field_handler
+ *   The handler associated with the table column being requested.
+ *
+ * @param object $result_row
+ *   The result row object
+ *
+ * @return mixed
+ */
+function views_aggregator_get_cell($field_handler, $result_row) {
+  $value = $field_handler->get_value($result_row);
+  if (!isset($value)) {
+    // This may happen with a $field_handler like views_php_handler_field that
+    // doesn't have its value available until after rendering. Render it here.
+    $value = $field_handler->render($result_row);
+  }
+  // The following is somewhat heuristic -- @todo
+  if (is_array($value)) {
+    $value = reset($value);
+    if (is_array($value)) {
+      $value = reset($value);
+    }
+  }
+  return $value;
+}
+
+/**
+ * Sets a value on the cell identified by the supplied column and row.
+ *
+ * @param object $field_handler
+ *   The handler associated with the table column being requested.
+ * @param object $result_row
+ *   The result row object.
+ * @param int $row_num
+ *   The result row number.
+ * @param mixed $simple_value
+ *   The value to set, a number or string.
+ */
+function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
+  $field_name = $field_handler->options['id'];
+  $field_alias = $field_handler->field_alias;
+
+  // See if we're dealing with a field, as opposed to views_handler_field_node.
+  if (is_a($field_handler, 'views_handler_field_field')) {
+    // The new value needs to be set in two places. First in _field_data[]...
+    // All of the foreach's below loop only once... most of the time.
+    $languages = $result_row->_field_data[$field_alias]['entity']->{$field_name};
+    foreach ($languages as $lang => $item) {
+      foreach ($item as $i => $values) {
+        foreach ($values as $name => $value) {
+          if ($name == 'tid' && !is_numeric($simple_value)) {
+            drupal_set_message(t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
+              '%field' => $field_name, '%value' => $value, '%new-value' => $simple_value,
+            )), 'warning');
+            return;
+          }
+          $result_row->_field_data[$field_alias]['entity']->{$field_name}[$lang][$i][$name] = $simple_value;
+        }
+      }
+    }
+    // Next employ set_items() to re-render the _field_data[] updated above.
+    // Place both the 'raw' and 'rendered' versions in field_...[].
+    $result_row->{'field_' . $field_name} = $field_handler->set_items($result_row, $row_num);
+  }
+  elseif (is_a($field_handler, 'views_php_handler_field')) {
+    $result_row->{$field_alias} = $simple_value;
+    $field_handler->options['php_output'] = FALSE;
+  }
+  elseif (isset($result_row->{$field_alias})) {
+    // Plain node property, not a field. Example: 'node_title'.
+    $result_row->{$field_alias} = $simple_value;
+  }
+}
+
+/**
+ * Extracts a colum of values from the result set.
+ *
+ * @param object $field_handler
+ *   The handler associated with the table column being requested.
+ * @param array $result_rows
+ *   An array of row objects representing the result set.
+ *
+ * @return array
+ *   An array of values in the requested column.
+ */
+function views_aggregator_get_column($field_handler, $result_rows) {
+  $column = array();
+  foreach ($result_rows as $row) {
+    $column[] = views_aggregator_get_cell($field_handler, $row);
+  }
+  return $column;
+}
+
+/**
+ * Prepare to render the view results as a table style.
+ *
+ * The rendering to HTML happens in views-aggregator-results-table.tpl.php
+ *
+ * See also:
+ * template_preprocess_views_view_table(&$vars) in Views
+ */
+function template_preprocess_views_aggregator_results_table(&$vars) {
+
+  if (!isset($view->row_index)) {
+    // Have seen trouble when this is not set...
+    $vars['view']->row_index = '';
+  }
+  if (!empty($vars['view']->group)) {
+    unset($vars['view']->style_plugin->rendered_fields);
+    $vars['rows'] = array();
+    // Note: at this stage each group consist of one row, i.e. count($rows)==1.
+    foreach ($vars['view']->group as $rows) {
+      $vars['rows'][] = reset($rows);
+    }
+  }
+  unset($vars['view']->group);
+  // Now render as per normal.
+  template_preprocess_views_view_table($vars);
+}
