@@ -5,6 +5,7 @@
  * theme_views_aggregator_plugin_style_table.inc
  *
  * Themes the View UI created in the class views_aggregator_plugin_style_table.
+ * Based on similar functions in both Views and Views Calc modules.
  */
 
 /**

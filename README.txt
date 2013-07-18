@@ -1,14 +1,15 @@
 
 VIEWS AGGREGATOR PLUS
 =====================
-Because the Views and ViewsCalc modules rely on the database to execute
-aggregation, you only have limited options for aggregation. As the great Merlin
-said himself: "You can't aggregate a PHP expression in the database. :/"
-[http://drupal.org/node/1219356#comment-4736826]
-This is where this module comes in. Unlike Views and ViewsCalc, this module:
+Because the Views and ViewsCalc modules rely on the database to perform
+aggregation, you only have limited options at your disposal. As the great Merlin
+said himself. This is where this module comes in. Unlike Views and ViewsCalc,
+this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
 o can aggregate on ViewsPHP expressions
+o aggregation functions can take arguments (currently used by "Replace group by
+  text" only)
 o can return the most or least frequently occurring member
 o lets you add your own custom aggregation functions to the existing set
 
@@ -35,29 +36,30 @@ Food    |   McRonalds | $500,000,000 |
 
 Then with the grouping taking place on, say Industry, and aggregation functions
 COUNT and SUM applied on Company Name and Turnover respectively, the final
-result will display like so:
+result will display like below. A descending sort was applied to Turnover and
+the display name of "Company Name" was changed to "Comp. Count".
 
 Industry| Comp. Count |     Turnover |
 --------|-------------|--------------|
 Food    |           2 | $566,000,000 |
-IT      |           2 |  $30,000,000 |
 Clothing|           1 |  $99,000,000 |
+IT      |           2 |  $30,000,000 |
 
 That's the basics and you can do the above with Views. But with Views
-Aggregator Plus you can also aggregate like so:
+Aggregator Plus (VAgg+) you can also aggregate like so:
 
 Industry    |Companies           |     Turnover |
 ------------|--------------------|--------------|
 Food (2)    |Heiny, McRonalds    | $566,000,000 |
-IT (2)      |AcquiB, PreviousBest|  $30,000,000 |
 Clothing (1)|Cenneton            |  $99,000,000 |
+IT (2)      |AcquiB, PreviousBest|  $30,000,000 |
 
 But that's just the beginning. Don't forget you can aggregate on ViewsPHP
 expressions, so the possibilities are endless! Say you have a content type
 "event" that has a date range field on it with both start and end components
-active. Let's say its machine name is "field_duration". Then code snippet below
-entered in the "Output" area of a Views PHP field will output in Views for each
-event whether it is in progress, closed or not started yet.
+active. Let's say its machine name is "field_duration". The code snippet below
+entered in the "Output code" area of a Views PHP field will output in Views for
+each event whether it is in progress, closed or not started yet.
 
 <?php
   $start_date = strtotime($data->field_field_duration[0]['raw']['value']);
@@ -68,10 +70,19 @@ event whether it is in progress, closed or not started yet.
 Next you can use VAgg+ to group on the expression and count or enumerate the
 event titles in each of these categories.
 
-NOTES
------
-Most of Views tabular output functions have been replicated in this plugin,
-even when Views PHP is used:
+HOW TO USE
+----------
+On the main Views UI page, admin/structure/views/view/YOUR-VIEW/edit/page,
+under Format, click and select "Table with aggregation options". Having arrived
+at the Settings page, follow the hints under the header "Style Options".
+
+Views Aggregator Plus does not combine well with Views' native aggregation.
+So in the Advanced field set (upper right) set "Use aggregation: No".
+
+LIMITATIONS
+-----------
+o Most of Views tabular output functions have been replicated in this plugin,
+  even when ViewsPHP is used.
 o Column sorting and token support seem mostly ok.
 o CSS styling options (striping, table and row classes) work.
 o Combining the output of multiple columns and putting it in another works ok.
@@ -81,49 +92,39 @@ o When you apply two aggregation functions on the same field, the 2nd function
   gets applied on the results of the first -- normally not what you want
 o For technical reasons, when enumerating group members, hyperlink markup is
   automatically dropped; the members appear in plain text.
-
-POSSIBLE ENHANCEMENTS
----------------------
-o Handle images (e.g. as enumerations)
+o Aggregation functions on entity ids work, but is likely to affect hyperlink
+  markup if the affected entities are used in other columns.
+o Dates and images cannot be enumerated (yet).
 
 TIPS FOR USING VIEWS PHP MODULE
 -------------------------------
-Use "Output expressions", not "Value expressions", as in the "Value" field few
-query results are available.
+Use "Output code", not "Value code", as in the "Value code" area few Views
+results are available. Here are some examples of the syntax to use for various
+field types for access in the Output code textarea. Note that to display
+these values you need to put "echo" in front of the expression. And use the
+<?php and ?> "brackets" around everything.
+
+// General fields, say a field named "Total", machine name: "field_total"
+Raw value: $data->field_field_total[0]['raw']['value'] // 1000
+Rendered value (i.e. marked-up for display):
+$data->field_field_total[0]['rendered']['#markup'] // $ 1,000.00
+
+// Dates, machine name "field_duration" (start & end dates),
+Raw start: $data->field_field_duration[0]['raw']['value']// 2013-06-02 00:00:00
+Raw end: $data->field_field_duration[0]['raw']['value2'] // 2013-06-04 00:00:00
+Rendered: $data->field_field_duration[0]['rendered']['#markup'];  //"Sun
+02-Jun-2013 to Wed 04-Jun-2013"
+
+// Taxonomy terms, machine name: "field_industry"
+Raw: $data->field_field_industry[0]['raw']['tid']
+Rendered: $data->field_field_industry[0]['rendered']['#title']
 
 
-
-FAQ's
------
-Q: With Views Aggregator Plus installed, is there a reason to use the Views
-   aggregation options?
-A: VAgg+ has all the standard Views aggregation functions plus more. For huge
-   datasets the native db functions employed by Views are possibly a little
-   faster in execution than VAgg+'s post-query approach.
-
-Q: As a developer can I add more aggregation functions in a maintainable
-   fashion and without hacking 
-Y: You can write your own mini-module for this in which you implement
-   hook_views_aggregation_functions_info(). It's easy. See how it was done
-   for this module. See file views/views_aggregator_functions.inc
-
-Q: Is Views Aggregator Plus different from ViewsCalc?
-A: Yes. ViewsCalc aggregates entire columns (and individual fields), while
-   Views Aggregator Plus aggregates on groups within columns.
-   ViewsCalc shows the aggregated results at the bottom of the original table,
-   whereas Views Aggregator Plus reduces the number of rows and shows the
-   aggregated results within the table, very much like Views' native aggregation
-   does. However VAgg+ has more aggregation functions and new ones can be added.
-
-Q: Can I use Views Aggregator Plus with ViewsCalc?
-A: If is safe to enable both modules. However each offers its own Views table
-   style format, so you can't create tabular output that features the combined
-   results of both on the same page (patches anyone?).
-
-
-
+REFs
+----
 https://drupal.org/node/1219356#comment-4782582
 https://drupal.org/node/1219356#comment-6909160
 https://drupal.org/node/1300900
 https://drupal.org/node/1791796
+https://drupal.org/node/1140896#comment-7657061
 

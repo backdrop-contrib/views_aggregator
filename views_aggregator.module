@@ -115,9 +115,9 @@ function views_aggregator_get_cell($field_handler, $result_row) {
  * @param object $result_row
  *   The result row object.
  * @param int $row_num
- *   The result row number.
+ *   The result row number. Required for fields, not for properties or PHP.
  * @param mixed $simple_value
- *   The value to set, a number or string.
+ *   The raw (not marked-up) value to set, a number or string.
  */
 function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
   $field_name = $field_handler->options['id'];
@@ -126,52 +126,58 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
   // See if we're dealing with a field, as opposed to views_handler_field_node.
   if (is_a($field_handler, 'views_handler_field_field')) {
     // The new value needs to be set in two places. First in _field_data[]...
-    // All of the foreach's below loop only once... most of the time.
+    // All of the foreach's below loop only once...
     $languages = $result_row->_field_data[$field_alias]['entity']->{$field_name};
     foreach ($languages as $lang => $item) {
       foreach ($item as $i => $values) {
         foreach ($values as $name => $value) {
+          // Most fields: $name == 'value'
+          // Taxonomy term: $name == 'tid'
           if ($name == 'tid' && !is_numeric($simple_value)) {
             drupal_set_message(t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
               '%field' => $field_name, '%value' => $value, '%new-value' => $simple_value,
             )), 'warning');
-            return;
           }
           $result_row->_field_data[$field_alias]['entity']->{$field_name}[$lang][$i][$name] = $simple_value;
+          break;
         }
+        break;
       }
     }
     // Next employ set_items() to re-render the _field_data[] updated above.
     // Place both the 'raw' and 'rendered' versions in field_...[].
     $result_row->{'field_' . $field_name} = $field_handler->set_items($result_row, $row_num);
+    return;
   }
-  elseif (is_a($field_handler, 'views_php_handler_field')) {
-    $result_row->{$field_alias} = $simple_value;
+  if (is_a($field_handler, 'views_php_handler_field')) {
+    // This prevents Views PHP from re-rendering the code snippet and makes it
+    // pick up the value from $result_row, as set in the statement below.
     $field_handler->options['php_output'] = FALSE;
   }
-  elseif (isset($result_row->{$field_alias})) {
-    // Plain node property, not a field. Example: 'node_title'.
-    $result_row->{$field_alias} = $simple_value;
-  }
+  // PHP or plain node property, not a field. Example: 'node_title'.
+  $result_row->{$field_alias} = $simple_value;
 }
 
 /**
- * Extracts a colum of values from the result set.
+ * Set a column of group values on the view.
  *
+ * @param object $view
+ *   the View object
  * @param object $field_handler
- *   The handler associated with the table column being requested.
- * @param array $result_rows
- *   An array of row objects representing the result set.
- *
- * @return array
- *   An array of values in the requested column.
+ *   the column handler
+ * @param array $group_values
+ *   the values to set, one for each group
  */
-function views_aggregator_get_column($field_handler, $result_rows) {
-  $column = array();
-  foreach ($result_rows as $row) {
-    $column[] = views_aggregator_get_cell($field_handler, $row);
+function views_aggregator_set_column($view, $field_handler, $group_values) {
+  foreach ($view->group as $group => $rows) {
+    if (isset($group_values[$group])) {
+      foreach ($rows as $num => $row) {
+        views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
+        // Only have to do the first row of the group.
+        break;
+      }
+    }
   }
-  return $column;
 }
 
 /**
