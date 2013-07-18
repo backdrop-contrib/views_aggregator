@@ -19,7 +19,7 @@
 function views_aggregator_views_aggregation_functions_info() {
   $functions = array(
     'views_aggregator_group_and_compress' => t('Group and compress into single rows'),
-    'views_aggregator_count' => t('Count no. members in group'),
+    'views_aggregator_count' => t('Count no. group members having value'),
     'views_aggregator_sum' => t('Sum group'),
     'views_aggregator_average' => t('Average group'),
     'views_aggregator_maximum' => t('Maximum value in group'),
@@ -79,14 +79,28 @@ function views_aggregator_average($view, $field_handler) {
  *   the view object with grouped query result rows in $view->group
  * @param object $field_handler
  *   the handler for the view column to count groups members in
- *
+ * @parm string $value
+ *   an optional value to count, if omitted all group values count
+ * 
  * @return array
  *   an array of column values, one for each group.
  */
-function views_aggregator_count($view, $field_handler) {
+function views_aggregator_count($view, $field_handler, $value = NULL) {
   $values = array();
   foreach ($view->group as $group => $rows) {
-    $values[$group] = count($rows);
+    if (isset($value)) {
+      $count = 0;
+      foreach ($rows as $row) {
+        $cell = views_aggregator_get_cell($field_handler, $row);
+        if ($cell == $value) {
+          $count++;
+        }
+      }
+    }
+    else {
+      $count = count($rows);
+    }
+    $values[$group] = $count;
   }
   return $values;
 }
@@ -106,7 +120,7 @@ function views_aggregator_enumerate($view, $field_handler) {
   $values = array();
   foreach ($view->group as $group => $rows) {
     $cell_values = array();
-    foreach ($rows as $num => $row) {
+    foreach ($rows as $row) {
       $cell = views_aggregator_get_cell($field_handler, $row);
       if (!in_array($cell, $cell_values)) {
         $cell_values[] = $cell;
@@ -202,20 +216,20 @@ function views_aggregator_minimum($view, $field_handler) {
  *   the view object with grouped query result rows in $view->group
  * @param object $field_handler
  *   the handler for the view column
- * @param string $parameter
+ * @param string $replace_text
  *   an optional parameter, specifying the replacement text to use
  *
  * @return array
  *   an array of column values, one for each group.
  */
-function views_aggregator_replace($view, $field_handler, $parameter = NULL) {
-  if (!isset($parameter)) {
-    $parameter = '-' . t('many') . '-';
+function views_aggregator_replace($view, $field_handler, $replace_text = NULL) {
+  if (!isset($replace_text)) {
+    $replace_text = '-' . t('many') . '-';
   }
   $values = array();
   foreach ($view->group as $group => $rows) {
     if (count($rows) > 1) {
-      $values[$group] = $parameter;
+      $values[$group] = $replace_text;
       // With more than one field in a group the fields no longer belong to one
       // particular entity. Cannot support hyper-linking, so switch it off.
       // Unfortunately this applies to the entire column.

@@ -69,7 +69,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // Optional parameter for the selected aggregation function.
       $form['info'][$field]['aggr_par'] = array(
         '#type' => 'textfield',
-        '#size' => 45,
+        '#size' => 41,
         '#title' => t('Parameter (where applicable)'),
         '#default_value' => isset($this->options['info'][$field]['aggr_par']) ? $this->options['info'][$field]['aggr_par'] : '',
         '#states' => array(
@@ -147,7 +147,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       if (!empty($options['has_aggr'])) {
         foreach ($options['aggr'] as $function) {
           if ($function != 'views_aggregator_group_and_compress' && isset($this->view->field[$field_name])) {
-            $parameter = isset($options['aggr_par']) ? $options['aggr_par'] : NULL;
+            $parameter = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
             $field_handler = $this->view->field[$field_name];
             $this->views_aggregator_execute_aggregation_function($function, $parameter, $field_handler);
           }
