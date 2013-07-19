@@ -21,7 +21,8 @@ function theme_views_aggregator_plugin_style_table($variables) {
   $header = array(
     t('Field'),
     t('Align'),
-    t('Aggregation'),
+    t('Group aggregation'),
+    t('Column aggregation'),
     t('Render column'),
     t('Separator'),
     array(
@@ -47,6 +48,10 @@ function theme_views_aggregator_plugin_style_table($variables) {
       = drupal_render($form['info'][$id]['has_aggr'])
       . drupal_render($form['info'][$id]['aggr'])
       . drupal_render($form['info'][$id]['aggr_par']);
+    $row[]
+      = drupal_render($form['info'][$id]['has_aggr_column'])
+      . drupal_render($form['info'][$id]['aggr_column'])
+      . drupal_render($form['info'][$id]['aggr_par_column']);
     $row[] = drupal_render($form['columns'][$id]);
     $row[] = drupal_render($form['info'][$id]['separator']);
     if (!empty($form['info'][$id]['sortable'])) {
@@ -80,6 +85,7 @@ function theme_views_aggregator_plugin_style_table($variables) {
     '',
     '',
     '',
+    '',
     array(
       'align' => 'center',
       'data' => drupal_render($form['default'][-1]),
@@ -87,6 +93,6 @@ function theme_views_aggregator_plugin_style_table($variables) {
     '',
   );
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
-  $output .= drupal_render_children($form);
+  $output . drupal_render_children($form);
   return $output;
 }

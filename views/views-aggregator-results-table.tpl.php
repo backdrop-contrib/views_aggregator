@@ -23,31 +23,42 @@
  * @ingroup views_templates
  */
 ?>
-<table <?php if ($classes): ?>class="<?php print $classes; ?>"<?php endif ?> <?php print $attributes; ?>>
-   <?php if (!empty($title) || !empty($caption)) : ?>
-     <caption><?php print $caption . $title; ?></caption>
+<table <?php if ($classes): ?>class="<?php print $classes; ?>"<?php endif ?><?php print $attributes; ?>>
+  <?php if (!empty($title) || !empty($caption)) : ?>
+    <caption><?php print $caption . $title; ?></caption>
   <?php endif; ?>
   <?php if (!empty($header)) : ?>
     <thead>
       <tr>
         <?php foreach ($header as $field => $label): ?>
-          <th <?php if ($header_classes[$field]): ?>class="<?php print $header_classes[$field]; ?>"><?php endif ?>
+          <th <?php if ($header_classes[$field]): ?>class="<?php print $header_classes[$field]; ?>"<?php endif ?>>
             <?php print $label; ?>
           </th>
-        <?php endforeach; ?>
+        <?php endforeach ?>
       </tr>
     </thead>
   <?php endif; ?>
   <tbody>
-    <?php foreach ($rows as $row_count => $row): ?>
-      <tr <?php if (!empty($row_classes[$row_count])): ?>class="<?php print implode(' ', $row_classes[$row_count]); ?>"><?php endif ?>
+    <?php foreach ($rows as $r => $row): ?>
+      <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"><?php endif ?>
         <?php foreach ($row as $field => $content): ?>
-          <td <?php if (!empty($field_classes[$field][$row_count])): ?>class="<?php print $field_classes[$field][$row_count]; ?>"<?php endif ?>
-              <?php if (!empty($field_attributes[$field][$row_count])): ?><?php print drupal_attributes($field_attributes[$field][$row_count]); ?><?php endif ?>>
+          <td <?php if (!empty($field_classes[$field][$r])): ?>class="<?php print $field_classes[$field][$r]; ?>"<?php endif ?>
+              <?php if (!empty($field_attributes[$field][$r])): ?><?php print drupal_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
             <?php print $content; ?>
           </td>
-        <?php endforeach; ?>
+        <?php endforeach ?>
       </tr>
-    <?php endforeach; ?>
+    <?php endforeach ?>
   </tbody>
+  <?php if (!empty($footer)) : ?>
+    <tfoot>
+      <tr>
+        <?php foreach ($footer as $field => $content): ?>
+          <th <?php if (!empty($field_classes[$field])): ?>class="<?php print reset($field_classes[$field]); ?>"<?php endif ?>>
+            <?php print $content; ?>
+          </th>
+        <?php endforeach ?>
+      </tr>
+    </tfoot>
+  <?php endif ?>
 </table>

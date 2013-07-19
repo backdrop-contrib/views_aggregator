@@ -38,7 +38,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     unset($form['grouping']);
 
     $form['description_markup'] = array(
-      '#markup' => '<div class="description form-item">' . t('Apply <em>"Group and compress into single rows"</em> to <strong>one</strong> field only. Select any of the other aggregation functions for some or all of the fields. You may combine multiple fields into the same column. If you do, the separator specified will be used to separate the fields. You may control column order and field labels in the Fields section of the main configuration pain.') . '</div>',
+      '#markup' => '<div class="description form-item">' . t('Apply <em>"Group and compress"</em> to <strong>one</strong> field only. Select any of the other aggregation functions for some or all of the fields. Some functions take an optional parameter, but most do not. You may combine multiple fields into the same column. If you do, the separator specified will be used to separate the fields. You may control column order and field labels in the Fields section of the main configuration pain.') . '</div>',
     );
 
     $columns = $this->sanitize_columns($this->options['columns']);
@@ -47,16 +47,25 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
       $form['info'][$field]['has_aggr'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Apply aggregation function'),
+        '#title' => t('Apply function'),
         '#default_value' => isset($this->options['info'][$field]['has_aggr']) ? $this->options['info'][$field]['has_aggr'] : FALSE,
       );
 
-      $options = views_aggregator_get_aggregation_functions_info();
+      $group_options = array();
+      $column_options = array();
+      foreach (views_aggregator_get_aggregation_functions_info() as $function => $display_names) {
+        if (!empty($display_names['group'])) {
+          $group_options[$function] = $display_names['group'];
+        }
+        if (!empty($display_names['column'])) {
+          $column_options[$function] = $display_names['column'];
+        }
+      }
       $form['info'][$field]['aggr'] = array(
         '#type' => 'select',
-        '#options' => $options,
+        '#options' => $group_options,
         '#multiple' => TRUE,
-        '#default_value' => isset($this->options['info'][$field]['aggr']) ? $this->options['info'][$field]['aggr'] : array(),
+        '#default_value' => empty($this->options['info'][$field]['aggr']) ? array('views_aggregator_first') : $this->options['info'][$field]['aggr'],
         '#states' => array(
           'visible' => array(
             'input[name="style_options[info][' . $field . '][has_aggr]"]' => array(
@@ -65,12 +74,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           ),
         ),
       );
-
       // Optional parameter for the selected aggregation function.
       $form['info'][$field]['aggr_par'] = array(
         '#type' => 'textfield',
-        '#size' => 41,
-        '#title' => t('Parameter (where applicable)'),
+        '#size' => 23,
+        '#title' => t('Parameter'),
         '#default_value' => isset($this->options['info'][$field]['aggr_par']) ? $this->options['info'][$field]['aggr_par'] : '',
         '#states' => array(
           'visible' => array(
@@ -78,6 +86,42 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
               'checked' => TRUE,
             ),
             'select[name="style_options[info][' . $field . '][aggr]"' => array(
+              // 'value' => array('views_aggregator_replace') Can't get this to work
+            )
+          ),
+        ),
+      );
+
+      $form['info'][$field]['has_aggr_column'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Apply function'),
+        '#default_value' => isset($this->options['info'][$field]['has_aggr_column']) ? $this->options['info'][$field]['has_aggr_column'] : FALSE,
+      );
+      $form['info'][$field]['aggr_column'] = array(
+        '#type' => 'select',
+        '#options' => $column_options,
+        '#multiple' => FALSE,
+        '#default_value' => empty($this->options['info'][$field]['aggr_column']) ? 'views_aggregator_sum' : $this->options['info'][$field]['aggr_column'],
+        '#states' => array(
+          'visible' => array(
+            'input[name="style_options[info][' . $field . '][has_aggr_column]"]' => array(
+              'checked' => TRUE,
+            ),
+          ),
+        ),
+      );
+      // Optional parameter for the selected column aggregation function.
+      $form['info'][$field]['aggr_par_column'] = array(
+        '#type' => 'textfield',
+        '#size' => 24,
+        '#title' => t('Parameter'),
+        '#default_value' => isset($this->options['info'][$field]['aggr_par_column']) ? $this->options['info'][$field]['aggr_par_column'] : '',
+        '#states' => array(
+          'visible' => array(
+            'input[name="style_options[info][' . $field . '][has_aggr_column]"]' => array(
+              'checked' => TRUE,
+            ),
+            'select[name="style_options[info][' . $field . '][aggr_column]"' => array(
               // 'value' => array('views_aggregator_replace') Can't get this to work
             )
           ),
@@ -109,7 +153,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // function. When we have aggregation functions, there must be 1 grouping.
     $ok = ($num_aggregation_functions == 0) ? $num_grouped <= 1 : $num_grouped == 1;
     if (!$ok) {
-      $msg = t('When applying aggregation functions, you must also select <em>"Group and compress into single rows"</em> for exactly one field.');
+      $msg = t('When applying group aggregation functions, you must also select <em>"Group and compress"</em> for exactly one field.');
       foreach ($form_state['values']['style_options']['info'] as $field_name => $options) {
         form_error($form['info'][$field_name]['aggr'], $msg);
         $msg = '';
@@ -132,6 +176,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // views_aggregator_group_and_compress(), which must be called first and for
     // one column/field only.
     $this->view->group = array();
+
     // Find the column to group by and execute the grouping.
     foreach ($this->options['info'] as $field_name => $options) {
       if (!empty($options['has_aggr']) && in_array('views_aggregator_group_and_compress', $options['aggr'])) {
@@ -143,20 +188,32 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       }
     }
     // Now call all the aggregation functions selected for each of the fields.
+    $values = array();
     foreach ($this->options['info'] as $field_name => $options) {
+      if (!isset($this->view->field[$field_name])) {
+        continue;
+      }
+      // Make a list of the group and column functions to call for this field.
+      $functions = empty($options['has_aggr_column']) ? array() : array($options['aggr_column']);
       if (!empty($options['has_aggr'])) {
         foreach ($options['aggr'] as $function) {
-          if ($function != 'views_aggregator_group_and_compress' && isset($this->view->field[$field_name])) {
-            $parameter = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
-            $field_handler = $this->view->field[$field_name];
-            $this->views_aggregator_execute_aggregation_function($function, $parameter, $field_handler);
+          if ($function != 'views_aggregator_group_and_compress' && !in_array($function, $functions)) {
+            $functions[] = $function;
           }
         }
       }
+      $field_handler = $this->view->field[$field_name];
+
+      // Now execute the selected aggregation functions on this field.
+      foreach ($functions as $function) {
+        $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
+        $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
+        $values[$field_name] = $function($this->view, $field_handler, $group_par, $column_par);
+      }
     }
+    // With the aggregation functions now called, spare the first row of each
+    // group as it holds the aggregation result. Destroy remainder of rows.
     foreach ($this->view->group as &$rows) {
-      // With the aggregation complete, spare the first row of each of the
-      // groups as it holds the aggregation result. Destroy remainder of rows.
       $is_first = NULL;
       foreach ($rows as $row_num => $row) {
         if (!isset($is_first)) {
@@ -170,28 +227,33 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
       }
     }
+    // Write the raw results back into the View result and add footer values.
+    $this->views_aggregator_set_aggregated_values($values);
+
     if (isset($this->active) && !empty($this->options['info'][$this->active]['has_aggr'])) {
       // Sort the table based on the selected sort column, i.e. $this->active.
       usort($this->view->group, array($this, '_views_aggregator_compare_rows'));
     }
   }
+
   /**
-   * Execute the supplied aggregation function with the parameter provided.
-   *  
-   * @param string $function
-   *   The name of the function to execute
-   * @param string $parameter
-   *   Parameter passed to the function. May be NULL.
-   * @param object $field_handler
-   *   The handler belonging to the column/field to be updated.
+   * Write the aggregated results back into the View results and footer.
+   *
+   * @param array $values
+   *   an array of column values, indexed by field name
    */
-  private function views_aggregator_execute_aggregation_function($function, $parameter, $field_handler) {
-
-    $group_values = $function($this->view, $field_handler, $parameter);
-
-    if (!empty($group_values)) {
-      // Not that NULL values result in the current cell being kept as is.
-      views_aggregator_set_column($this->view, $field_handler, $group_values);
+  private function views_aggregator_set_aggregated_values($values) {
+    if (!empty($values)) {
+      // Set the "total" cell at the bottom of the column.
+      foreach ($this->options['info'] as $field_name => $options) {
+        $field_handler = $this->view->field[$field_name];
+        if (empty($field_handler->options['exclude'])) {
+          if (isset($values[$field_name])) {
+            views_aggregator_set_column($this->view, $field_handler, $values[$field_name]);
+          }
+          $this->view->totals[$field_name] = !empty($options['has_aggr_column']) && isset($values[$field_name]['column']) ? $values[$field_name]['column'] : '';
+        }
+      }
     }
   }
 

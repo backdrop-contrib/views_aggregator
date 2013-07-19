@@ -166,11 +166,11 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
  * @param object $field_handler
  *   the column handler
  * @param array $group_values
- *   the values to set, one for each group
+ *   the values to set, indexed by group
  */
 function views_aggregator_set_column($view, $field_handler, $group_values) {
   foreach ($view->group as $group => $rows) {
-    if (isset($group_values[$group])) {
+    if ($group != 'column' && isset($group_values[$group])) {
       foreach ($rows as $num => $row) {
         views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
         // Only have to do the first row of the group.
@@ -189,20 +189,25 @@ function views_aggregator_set_column($view, $field_handler, $group_values) {
  * template_preprocess_views_view_table(&$vars) in Views
  */
 function template_preprocess_views_aggregator_results_table(&$vars) {
+  $view = &$vars['view'];
 
-  if (!isset($view->row_index)) {
-    // Have seen trouble when this is not set...
-    $vars['view']->row_index = '';
-  }
-  if (!empty($vars['view']->group)) {
-    unset($vars['view']->style_plugin->rendered_fields);
+  if (!empty($view->group)) {
+    unset($view->style_plugin->rendered_fields);
     $vars['rows'] = array();
     // Note: at this stage each group consist of one row, i.e. count($rows)==1.
-    foreach ($vars['view']->group as $rows) {
+    foreach ($view->group as $rows) {
       $vars['rows'][] = reset($rows);
     }
   }
-  unset($vars['view']->group);
+  if (array_filter($view->totals) != array()) {
+    $vars['footer'] = $view->totals;
+  }
+  unset($view->group);
+  unset($view->totals);
+  if (!isset($view->row_index)) {
+    // Have seen trouble when this is not set...
+    $view->row_index = '';
+  }
   // Now render as per normal.
   template_preprocess_views_view_table($vars);
 }
