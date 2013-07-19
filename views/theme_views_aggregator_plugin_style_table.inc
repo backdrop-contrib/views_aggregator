@@ -93,6 +93,6 @@ function theme_views_aggregator_plugin_style_table($variables) {
     '',
   );
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
-  $output . drupal_render_children($form);
+  $output .= drupal_render_children($form);
   return $output;
 }

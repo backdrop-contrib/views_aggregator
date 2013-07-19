@@ -199,7 +199,7 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
       $vars['rows'][] = reset($rows);
     }
   }
-  if (array_filter($view->totals) != array()) {
+  if (!empty($view->totals) && array_filter($view->totals) != array()) {
     $vars['footer'] = $view->totals;
   }
   unset($view->group);

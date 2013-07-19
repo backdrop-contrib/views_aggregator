@@ -274,18 +274,17 @@ function views_aggregator_minimum($view, $field_handler) {
 function views_aggregator_replace($view, $field_handler, $replace_text = NULL, $column_label = NULL) {
   $values = array();
   foreach ($view->group as $group => $rows) {
-    if (count($rows) > 1) {
-      $values[$group] = $replace_text;
+    $values[$group] = $replace_text;
+    if (count($rows) > 1 && isset($replace_text)) {
       // With more than one field in a group the fields no longer belong to one
       // particular entity. Cannot support hyper-linking, so switch it off.
       // Unfortunately this applies to the entire column.
       unset($field_handler->options['link_to_node']);
     }
-    else {
-      $values[$group] =  NULL;
-    }
   }
-  $values['column'] = $column_label;
+  if (isset($column_label)) {
+    $values['column'] = $column_label;
+  }
   return $values;
 }
 

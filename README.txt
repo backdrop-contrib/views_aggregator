@@ -53,7 +53,11 @@ Industry    |Companies           |     Turnover |
 Food (2)    |Heiny, McRonalds    | $566,000,000 |
 Clothing (1)|Cenneton            |  $99,000,000 |
 IT (2)      |AcquiB, PreviousBest|  $30,000,000 |
+------------|--------------------|--------------|
+Totals      |                  5 | $695,000,000 |
+------------------------------------------------
 
+Note that the module applied a descending sort and added a summary row too.
 But that's just the beginning. Don't forget you can aggregate on ViewsPHP
 expressions, so the possibilities are endless! Say you have a content type
 "event" that has a date range field on it with both start and end components
@@ -75,7 +79,7 @@ HOW TO USE
 On the main Views UI page, admin/structure/views/view/YOUR-VIEW/edit/page,
 under Format, click and select "Table with aggregation options". Having arrived
 at the Settings page, follow the hints under the header "Style Options".
-
+There are no permissions or global configurations.
 Views Aggregator Plus does not combine well with Views' native aggregation.
 So in the Advanced field set (upper right) set "Use aggregation: No".
 

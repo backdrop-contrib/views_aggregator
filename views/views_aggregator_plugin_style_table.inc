@@ -203,15 +203,18 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
       }
       $field_handler = $this->view->field[$field_name];
-
+      $values[$field_name] = FALSE;
       // Now execute the selected aggregation functions on this field.
       foreach ($functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
         $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
-        $values[$field_name] = $function($this->view, $field_handler, $group_par, $column_par);
+        $return = $function($this->view, $field_handler, $group_par, $column_par);
+        if (!empty($return)) {
+          $values[$field_name] = $return;
+        }
       }
     }
-    // With the aggregation functions now called, spare the first row of each
+    // With the aggregation functions now executed, spare the first row of each
     // group as it holds the aggregation result. Destroy remainder of rows.
     foreach ($this->view->group as &$rows) {
       $is_first = NULL;

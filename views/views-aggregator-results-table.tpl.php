@@ -40,7 +40,7 @@
   <?php endif; ?>
   <tbody>
     <?php foreach ($rows as $r => $row): ?>
-      <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"><?php endif ?>
+      <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"<?php endif ?>>
         <?php foreach ($row as $field => $content): ?>
           <td <?php if (!empty($field_classes[$field][$r])): ?>class="<?php print $field_classes[$field][$r]; ?>"<?php endif ?>
               <?php if (!empty($field_attributes[$field][$r])): ?><?php print drupal_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
