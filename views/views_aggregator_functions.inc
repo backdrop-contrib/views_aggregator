@@ -274,7 +274,9 @@ function views_aggregator_minimum($view, $field_handler) {
 function views_aggregator_replace($view, $field_handler, $replace_text = NULL, $column_label = NULL) {
   $values = array();
   foreach ($view->group as $group => $rows) {
-    $values[$group] = $replace_text;
+    if (isset($replace_text)) {
+      $values[$group] = $replace_text;
+    }
     if (count($rows) > 1 && isset($replace_text)) {
       // With more than one field in a group the fields no longer belong to one
       // particular entity. Cannot support hyper-linking, so switch it off.

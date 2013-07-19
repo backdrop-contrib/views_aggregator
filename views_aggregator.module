@@ -118,11 +118,14 @@ function views_aggregator_get_cell($field_handler, $result_row) {
  *   The result row number. Required for fields, not for properties or PHP.
  * @param mixed $simple_value
  *   The raw (not marked-up) value to set, a number or string.
+ *
+ * @return string $error
+ *   Error message or NULL if all is well.
  */
 function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
   $field_name = $field_handler->options['id'];
   $field_alias = $field_handler->field_alias;
-
+  $error = NULL;
   // See if we're dealing with a field, as opposed to views_handler_field_node.
   if (is_a($field_handler, 'views_handler_field_field')) {
     // The new value needs to be set in two places. First in _field_data[]...
@@ -134,9 +137,9 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
           // Most fields: $name == 'value'
           // Taxonomy term: $name == 'tid'
           if ($name == 'tid' && !is_numeric($simple_value)) {
-            drupal_set_message(t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
+            $error = t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
               '%field' => $field_name, '%value' => $value, '%new-value' => $simple_value,
-            )), 'warning');
+            ));
           }
           $result_row->_field_data[$field_alias]['entity']->{$field_name}[$lang][$i][$name] = $simple_value;
           break;
@@ -147,7 +150,7 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
     // Next employ set_items() to re-render the _field_data[] updated above.
     // Place both the 'raw' and 'rendered' versions in field_...[].
     $result_row->{'field_' . $field_name} = $field_handler->set_items($result_row, $row_num);
-    return;
+    return $error;
   }
   if (is_a($field_handler, 'views_php_handler_field')) {
     // This prevents Views PHP from re-rendering the code snippet and makes it
@@ -156,6 +159,7 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
   }
   // PHP or plain node property, not a field. Example: 'node_title'.
   $result_row->{$field_alias} = $simple_value;
+  return $error;
 }
 
 /**
@@ -172,7 +176,10 @@ function views_aggregator_set_column($view, $field_handler, $group_values) {
   foreach ($view->group as $group => $rows) {
     if ($group != 'column' && isset($group_values[$group])) {
       foreach ($rows as $num => $row) {
-        views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
+        $error = views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
+        if ($error) {
+          drupal_set_message($error, 'warning');
+        }
         // Only have to do the first row of the group.
         break;
       }

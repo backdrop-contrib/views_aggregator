@@ -176,7 +176,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // views_aggregator_group_and_compress(), which must be called first and for
     // one column/field only.
     $this->view->group = array();
-
+    
     // Find the column to group by and execute the grouping.
     foreach ($this->options['info'] as $field_name => $options) {
       if (!empty($options['has_aggr']) && in_array('views_aggregator_group_and_compress', $options['aggr'])) {
@@ -243,18 +243,32 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Write the aggregated results back into the View results and footer.
    *
    * @param array $values
-   *   an array of column values, indexed by field name
+   *   an array of column value arrays, indexed by field name
    */
   private function views_aggregator_set_aggregated_values($values) {
     if (!empty($values)) {
-      // Set the "total" cell at the bottom of the column.
+      $row_template = clone reset($this->view->result);
       foreach ($this->options['info'] as $field_name => $options) {
         $field_handler = $this->view->field[$field_name];
         if (empty($field_handler->options['exclude'])) {
-          if (isset($values[$field_name])) {
+
+          // Set the group's column value belonging to this field.
+          $must_set = FALSE;
+          if (!empty($options['has_aggr']) && !empty($options['aggr'])) {
+            $must_set = $options['aggr'] != array('views_aggregator_group_and_compress' => 'views_aggregator_group_and_compress');
+          }
+          if ($must_set && isset($values[$field_name])) {
             views_aggregator_set_column($this->view, $field_handler, $values[$field_name]);
           }
-          $this->view->totals[$field_name] = !empty($options['has_aggr_column']) && isset($values[$field_name]['column']) ? $values[$field_name]['column'] : '';
+
+          // Set this field's column aggregation on the total row.
+          $rendered_value = '';
+          if (!empty($options['has_aggr_column']) && !empty($row_template) && isset($values[$field_name]['column'])) {
+            $simple_value = $values[$field_name]['column'];
+            $cannot_set = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
+            $rendered_value = $cannot_set ? $simple_value : $field_handler->theme($row_template);
+          }
+          $this->view->totals[$field_name] = $rendered_value;
         }
       }
     }
