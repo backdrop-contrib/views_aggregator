@@ -18,6 +18,7 @@
  */
 function views_aggregator_views_aggregation_functions_info() {
   $functions = array(
+    // This first one is special.
     'views_aggregator_group_and_compress' => array(
       'group' => t('Group and compress'),
       'column' => NULL,
@@ -71,30 +72,35 @@ function views_aggregator_views_aggregation_functions_info() {
  *   the view object with query results
  * @param object $field_handler
  *   the handler for the view column to group rows on
+ *
+ * @return array
+ *   an array of groups, keyed by group value first and row number second.
  */
-function views_aggregator_group_and_compress($view, $field_handler) {
-  foreach ($view->result as $num => $row) {
-    $group_value = views_aggregator_get_cell($field_handler, $row);
-    $view->group[$group_value][$num] = $row;
+function views_aggregator_group_and_compress($view_results, $field_handler) {
+  $groups = array();
+  foreach ($view_results as $num => $row) {
+    $group_value = views_aggregator_get_cell($field_handler, $row, TRUE);
+    $groups[$group_value][$num] = $row;
   }
+  return $groups;
 }
 
 /**
  * Aggregates a group of result rows as the minimum amongst its members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the minimum in
  *
  * @return array
  *   an array of column values, one for each group and one for the column.
  */
-function views_aggregator_average($view, $field_handler) {
+function views_aggregator_average($groups, $field_handler) {
   $values = array();
   $sum_column = 0.0;
   $count_all_rows = 0;
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $sum = 0.0;
     foreach ($rows as $row) {
       $sum += views_aggregator_get_cell($field_handler, $row);
@@ -110,8 +116,8 @@ function views_aggregator_average($view, $field_handler) {
 /**
  * Aggregates a group of result rows as a count of the number of group members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to count groups members in
  * @parm string $value
@@ -120,15 +126,15 @@ function views_aggregator_average($view, $field_handler) {
  * @return array
  *   an array of column values, one for each group and one for the column
  */
-function views_aggregator_count($view, $field_handler, $group_value = NULL, $column_value = NULL) {
+function views_aggregator_count($groups, $field_handler, $group_value = NULL, $column_value = NULL) {
   $values = array();
   $count_column = 0;
   $value = isset($group_value) ? $group_value : $column_value;
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     if (isset($value)) {
       $count = 0;
       foreach ($rows as $row) {
-        $cell = views_aggregator_get_cell($field_handler, $row);
+        $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
         if ($cell == $value) {
           $count++;
         }
@@ -147,20 +153,20 @@ function views_aggregator_count($view, $field_handler, $group_value = NULL, $col
 /**
  * Aggregates a group of result rows as the enumeration of its members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array
  *   an array of column values, one for each group.
  */
-function views_aggregator_enumerate($view, $field_handler) {
+function views_aggregator_enumerate($groups, $field_handler) {
   $values = array();
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $cell_values = array();
     foreach ($rows as $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row);
+      $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
       if (!empty($cell) && !in_array($cell, $cell_values)) {
         $cell_values[] = $cell;
       }
@@ -183,15 +189,15 @@ function views_aggregator_enumerate($view, $field_handler) {
 /**
  * Aggregates a group of result rows as the first member of the group.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the first group member in
  *
  * @return array
- *   an array of column values, one for each group.
+ *   an empty array
  */
-function views_aggregator_first($view, $field_handler) {
+function views_aggregator_first($groups, $field_handler) {
   // This is the default operation anyway, so nothing to do.
   return array();
 }
@@ -199,17 +205,17 @@ function views_aggregator_first($view, $field_handler) {
 /**
  * Aggregates a group of result rows as the maximum across its members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the maximum groups member in
  *
  * @return array
- *   an array of column values, one for each group and one for the column
+ *   an array of column values, one for each group, plus the 'column' group
  */
-function views_aggregator_maximum($view, $field_handler) {
+function views_aggregator_maximum($groups, $field_handler) {
   $values = array();
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $maximum = views_aggregator_get_cell($field_handler, reset($rows));
     while ($row = next($rows)) {
       $value = views_aggregator_get_cell($field_handler, $row);
@@ -229,17 +235,17 @@ function views_aggregator_maximum($view, $field_handler) {
 /**
  * Aggregates a group of result rows as the minimum across its members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the minimum groups member in
  *
  * @return array
- *   an array of column values, one for each group and one for the column.
+ *   an array of column values, one for each group, plus the 'column' group
  */
-function views_aggregator_minimum($view, $field_handler) {
+function views_aggregator_minimum($groups, $field_handler) {
   $values = array();
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $minimum = views_aggregator_get_cell($field_handler, reset($rows));
     while ($row = next($rows)) {
       $value = views_aggregator_get_cell($field_handler, $row);
@@ -259,8 +265,8 @@ function views_aggregator_minimum($view, $field_handler) {
 /**
  * Aggregates a group of result rows as a word, phrase or number.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column
  * @param string $replace_text
@@ -269,11 +275,11 @@ function views_aggregator_minimum($view, $field_handler) {
  *   an optional parameter, specifying a label placed the bottom of the column
  *
  * @return array
- *   an array of column values, one for each group and one for the column
+ *   an array of column values, one for each group and one for the 'column'
  */
-function views_aggregator_replace($view, $field_handler, $replace_text = NULL, $column_label = NULL) {
+function views_aggregator_replace($groups, $field_handler, $replace_text = NULL, $column_label = NULL) {
   $values = array();
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     if (isset($replace_text)) {
       $values[$group] = $replace_text;
     }
@@ -293,18 +299,18 @@ function views_aggregator_replace($view, $field_handler, $replace_text = NULL, $
 /**
  * Aggregates a group of result rows as a sum.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to sum groups in
  *
  * @return array
- *   an array of column values, one for each group.
+ *   an array of column values, one for each group, plus the 'column' group
  */
-function views_aggregator_sum($view, $field_handler) {
+function views_aggregator_sum($groups, $field_handler) {
   $values = array();
   $sum_column = 0.0;
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $sum = 0.0;
     foreach ($rows as $row) {
       $sum += views_aggregator_get_cell($field_handler, $row);
@@ -319,20 +325,20 @@ function views_aggregator_sum($view, $field_handler) {
 /**
  * Aggregates a group of result rows as the tally of its members.
  *
- * @param object $view
- *   the view object with grouped query result rows in $view->group
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array
- *   an array of column values, one for each group.
+ *   an array of column values, one for each group
  */
-function views_aggregator_tally($view, $field_handler) {
+function views_aggregator_tally($groups, $field_handler) {
   $values = array();
-  foreach ($view->group as $group => $rows) {
+  foreach ($groups as $group => $rows) {
     $tally = array();
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row);
+      $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
       if (empty($cell)) {
         // No tallying empty values.
         $values[$group] = NULL;

@@ -47,7 +47,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
       $form['info'][$field]['has_aggr'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Apply function'),
+        '#title' => t('Apply group function'),
         '#default_value' => isset($this->options['info'][$field]['has_aggr']) ? $this->options['info'][$field]['has_aggr'] : FALSE,
       );
 
@@ -94,7 +94,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
       $form['info'][$field]['has_aggr_column'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Apply function'),
+        '#title' => t('Apply column function'),
         '#default_value' => isset($this->options['info'][$field]['has_aggr_column']) ? $this->options['info'][$field]['has_aggr_column'] : FALSE,
       );
       $form['info'][$field]['aggr_column'] = array(
@@ -172,21 +172,25 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     if (empty($this->view->result)) {
       return;
     }
-    // Aggregation functions rely on there being $view->group, as fleshed out by
-    // views_aggregator_group_and_compress(), which must be called first and for
-    // one column/field only.
-    $this->view->group = array();
     
-    // Find the column to group by and execute the grouping.
+    // Find the one column to group by and execute the grouping.
     foreach ($this->options['info'] as $field_name => $options) {
       if (!empty($options['has_aggr']) && in_array('views_aggregator_group_and_compress', $options['aggr'])) {
         if (isset($this->view->field[$field_name])) {
           $field_handler = $this->view->field[$field_name];
-          views_aggregator_group_and_compress($this->view, $field_handler);
+          $groups = views_aggregator_group_and_compress($this->view->result, $field_handler);
           break;
         }
       }
     }
+    if (empty($groups)) {
+      // If there are no regular groups, create a special group for column
+      // aggregation. This group holds all View result rows.
+      foreach ($this->view->result as $num => $row) {
+        $groups['column'][$num] = $row;
+      }
+    }
+
     // Now call all the aggregation functions selected for each of the fields.
     $values = array();
     foreach ($this->options['info'] as $field_name => $options) {
@@ -203,30 +207,33 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
       }
       $field_handler = $this->view->field[$field_name];
-      $values[$field_name] = FALSE;
+      $values[$field_name]['column'] = FALSE;
       // Now execute the selected aggregation functions on this field.
       foreach ($functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
         $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
-        $return = $function($this->view, $field_handler, $group_par, $column_par);
+        $return = $function($groups, $field_handler, $group_par, $column_par);
         if (!empty($return)) {
-          $values[$field_name] = $return;
+          $values[$field_name] = array_merge($values[$field_name], $return);
         }
       }
     }
     // With the aggregation functions now executed, spare the first row of each
     // group as it holds the aggregation result. Destroy remainder of rows.
-    foreach ($this->view->group as &$rows) {
-      $is_first = NULL;
-      foreach ($rows as $row_num => $row) {
-        if (!isset($is_first)) {
-          // Preserve only the first row.
-          $is_first = $row_num;
-        }
-        else {
-          // Remove row from group and View result set and destroy.
-          unset($rows[$row_num]);
-          unset($this->view->result[$row_num]);
+    foreach ($groups as $group => $rows) {
+      if ($group != 'column') {
+        $is_first = NULL;
+        foreach ($rows as $row_num => $row) {
+          if (!isset($is_first)) {
+            // Preserve only the first row.
+            $is_first = $row_num;
+            $this->view->group[$group][$row_num] = $row;
+          }
+          else {
+            // Remove row from group and View result set.
+            unset($groups[$group][$row_num]);
+            unset($this->view->result[$row_num]);
+          }
         }
       }
     }
@@ -262,13 +269,15 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           }
 
           // Set this field's column aggregation on the total row.
-          $rendered_value = '';
+          $themed_value = '';
           if (!empty($options['has_aggr_column']) && !empty($row_template) && isset($values[$field_name]['column'])) {
             $simple_value = $values[$field_name]['column'];
-            $cannot_set = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
-            $rendered_value = $cannot_set ? $simple_value : $field_handler->theme($row_template);
+            if (!($cannot_set = is_a($field_handler, 'views_php_handler_field'))) {
+              $cannot_set = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
+            }
+            $themed_value = $cannot_set ? $simple_value : $field_handler->theme($row_template);
           }
-          $this->view->totals[$field_name] = $rendered_value;
+          $this->view->totals[$field_name] = $themed_value;
         }
       }
     }

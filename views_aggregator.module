@@ -88,11 +88,17 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
  * @param object $result_row
  *   The result row object
  *
- * @return mixed
+ * @param object $themed
+ *   Whether to return the themed as opposed to the raw value of the cell
+ *
+ * @return string
  */
-function views_aggregator_get_cell($field_handler, $result_row) {
-  $value = $field_handler->get_value($result_row);
-  if (!isset($value)) {
+function views_aggregator_get_cell($field_handler, $result_row, $themed = FALSE) {
+  // get_value($result_row) may produce values like value[0]['tid'] == 37
+  // That's why render() won't work as it expects value_raw to be a simple value
+  // As lighter alternative to theme() consider advanced_render();
+  $value = $themed ? $field_handler->theme($result_row) : $field_handler->get_value($result_row);
+  if (!isset($value) && !$themed) {
     // This may happen with a $field_handler like views_php_handler_field that
     // doesn't have its value available until after rendering. Render it here.
     $value = $field_handler->render($result_row);
@@ -122,7 +128,7 @@ function views_aggregator_get_cell($field_handler, $result_row) {
  * @return string $error
  *   Error message or NULL if all is well.
  */
-function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
+function views_aggregator_set_cell($field_handler, $result_row, $row_num, $simple_value) {
   $field_name = $field_handler->options['id'];
   $field_alias = $field_handler->field_alias;
   $error = NULL;
@@ -133,6 +139,11 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
     $languages = $result_row->_field_data[$field_alias]['entity']->{$field_name};
     foreach ($languages as $lang => $item) {
       foreach ($item as $i => $values) {
+        if (count($values) > 1) {
+          $error = t('Views Aggregator Plus: cannot set multi-valued field %field.', array(
+           '%field' => $field_name
+          ));
+        }
         foreach ($values as $name => $value) {
           // Most fields: $name == 'value'
           // Taxonomy term: $name == 'tid'
@@ -147,8 +158,8 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
         break;
       }
     }
-    // Next employ set_items() to re-render the _field_data[] updated above.
-    // Place both the 'raw' and 'rendered' versions in field_...[].
+    // Next employ set_items() to re-render the _field_data[] updated above,
+    // placing both the 'raw' and 'rendered' versions in field_...[].
     $result_row->{'field_' . $field_name} = $field_handler->set_items($result_row, $row_num);
     return $error;
   }
@@ -178,7 +189,7 @@ function views_aggregator_set_column($view, $field_handler, $group_values) {
       foreach ($rows as $num => $row) {
         $error = views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
         if ($error) {
-          drupal_set_message($error, 'warning');
+          drupal_set_message($error, 'warning', FALSE);
         }
         // Only have to do the first row of the group.
         break;

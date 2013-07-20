@@ -53,9 +53,12 @@
   <?php if (!empty($footer)) : ?>
     <tfoot>
       <tr>
-        <?php foreach ($footer as $field => $content): ?>
+        <?php
+          // Use order of the row fields to output the footer fields likewise.
+          foreach (array_keys(reset($rows)) as $field):
+        ?>
           <th <?php if (!empty($field_classes[$field])): ?>class="<?php print reset($field_classes[$field]); ?>"<?php endif ?>>
-            <?php print $content; ?>
+            <?php print $footer[$field]; ?>
           </th>
         <?php endforeach ?>
       </tr>
