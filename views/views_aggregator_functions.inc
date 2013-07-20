@@ -166,7 +166,7 @@ function views_aggregator_enumerate($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $cell_values = array();
     foreach ($rows as $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
+      $cell = views_aggregator_get_cell($field_handler, $row);
       if (!empty($cell) && !in_array($cell, $cell_values)) {
         $cell_values[] = $cell;
       }
@@ -338,7 +338,7 @@ function views_aggregator_tally($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $tally = array();
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
+      $cell = views_aggregator_get_cell($field_handler, $row);
       if (empty($cell)) {
         // No tallying empty values.
         $values[$group] = NULL;

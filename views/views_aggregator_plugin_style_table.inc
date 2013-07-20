@@ -275,7 +275,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
             if (!($cannot_set = is_a($field_handler, 'views_php_handler_field'))) {
               $cannot_set = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
             }
-            $themed_value = $cannot_set ? $simple_value : $field_handler->theme($row_template);
+            if ($cannot_set) {
+              $themed_value = $simple_value;
+            }
+            else {
+              unset($this->view->field[$field_name]->options['link_to_node']);
+              $themed_value = $field_handler->theme($row_template);
+            }
           }
           $this->view->totals[$field_name] = $themed_value;
         }
