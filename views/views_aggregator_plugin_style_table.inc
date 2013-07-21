@@ -169,6 +169,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function pre_render($results) {
     parent::pre_render($results);
+    
     if (empty($this->view->result)) {
       return;
     }
@@ -207,86 +208,97 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
       }
       $field_handler = $this->view->field[$field_name];
-      $values[$field_name]['column'] = FALSE;
+
       // Now execute the selected aggregation functions on this field.
       foreach ($functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
         $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
         $return = $function($groups, $field_handler, $group_par, $column_par);
         if (!empty($return)) {
-          $values[$field_name] = array_merge($values[$field_name], $return);
+           // $todo array_merge($values[$field_name], $return); preserve index
+          $values[$field_name] = $return;
         }
       }
     }
+    // Write group aggregation results into the groups.
+    $this->views_aggregator_set_aggregated_group_values($groups, $values);
+
     // With the aggregation functions now executed, spare the first row of each
     // group as it holds the aggregation result. Destroy remainder of rows.
     foreach ($groups as $group => $rows) {
-      if ($group != 'column') {
-        $is_first = NULL;
-        foreach ($rows as $row_num => $row) {
-          if (!isset($is_first)) {
-            // Preserve only the first row.
-            $is_first = $row_num;
-            $this->view->group[$group][$row_num] = $row;
-          }
-          else {
-            // Remove row from group and View result set.
-            unset($groups[$group][$row_num]);
-            unset($this->view->result[$row_num]);
-          }
+      $is_first = TRUE;
+      foreach ($rows as $row_num => $row) {
+        if (!$is_first) {
+          // Remove row from group and View result set.
+          unset($groups[$group][$row_num]);
+          unset($this->view->result[$row_num]);
         }
+        $is_first = FALSE;
       }
     }
-    // Write the raw results back into the View result and add footer values.
-    $this->views_aggregator_set_aggregated_values($values);
-
     if (isset($this->active) && !empty($this->options['info'][$this->active]['has_aggr'])) {
       // Sort the table based on the selected sort column, i.e. $this->active.
-      usort($this->view->group, array($this, '_views_aggregator_compare_rows'));
+      uasort($groups, array($this, '_views_aggregator_compare_rows'));
     }
+    $this->view->group = $groups;
+
+    // Write column aggregation results on the View
+    $this->view->totals = $this->views_aggregator_set_totals($values);
   }
 
   /**
    * Write the aggregated results back into the View results and footer.
    *
    * @param array $values
-   *   an array of column value arrays, indexed by field name
+   *   an array of value arrays, indexed by field name
    */
-  private function views_aggregator_set_aggregated_values($values) {
-    if (!empty($values)) {
-      $row_template = clone reset($this->view->result);
-      foreach ($this->options['info'] as $field_name => $options) {
-        $field_handler = $this->view->field[$field_name];
-        if (empty($field_handler->options['exclude'])) {
+  private function views_aggregator_set_aggregated_group_values($groups, $values) {
+    foreach ($this->options['info'] as $field_name => $options) {
+      $field_handler = $this->view->field[$field_name];
 
-          // Set the group's column value belonging to this field.
-          $must_set = FALSE;
-          if (!empty($options['has_aggr']) && !empty($options['aggr'])) {
-            $must_set = $options['aggr'] != array('views_aggregator_group_and_compress' => 'views_aggregator_group_and_compress');
-          }
-          if ($must_set && isset($values[$field_name])) {
-            views_aggregator_set_column($this->view, $field_handler, $values[$field_name]);
-          }
-
-          // Set this field's column aggregation on the total row.
-          $themed_value = '';
-          if (!empty($options['has_aggr_column']) && !empty($row_template) && isset($values[$field_name]['column'])) {
-            $simple_value = $values[$field_name]['column'];
-            if (!($cannot_set = is_a($field_handler, 'views_php_handler_field'))) {
-              $cannot_set = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
-            }
-            if ($cannot_set) {
-              $themed_value = $simple_value;
-            }
-            else {
-              unset($this->view->field[$field_name]->options['link_to_node']);
-              $themed_value = $field_handler->theme($row_template);
-            }
-          }
-          $this->view->totals[$field_name] = $themed_value;
+      if (empty($field_handler->options['exclude']) && isset($values[$field_name])) {
+        $must_set = FALSE;
+        if (!empty($options['has_aggr']) && !empty($options['aggr'])) {
+          $must_set = $options['aggr'] != array('views_aggregator_group_and_compress' => 'views_aggregator_group_and_compress');
+        }
+        if ($must_set) {
+          // Set the group's value belonging to this field.
+          views_aggregator_set_column($groups, $field_handler, $values[$field_name]);
         }
       }
     }
+  }
+
+  /**
+   * Write the aggregated results back into the View results totals (footer).
+   *
+   * @param array $values
+   *   an array of field value arrays, indexed by field name
+   */
+  private function views_aggregator_set_totals($values) {
+    $totals = array();
+    $row_template = clone reset($this->view->result);
+    foreach ($this->options['info'] as $field_name => $options) {
+      $field_handler = $this->view->field[$field_name];
+
+      if (empty($field_handler->options['exclude']) && !empty($options['has_aggr_column']) && isset($values[$field_name]['column'])) {
+        $simple_value = $values[$field_name]['column'];
+
+        $cannot_set = is_a($field_handler, 'views_php_handler_field')
+          || $error = views_aggregator_set_cell($field_handler, $row_template, 0, $simple_value);
+
+        if ($cannot_set) {
+          $totals[$field_name] = $simple_value;
+        }
+        else {
+          // Hyperinking on a summary total does not make sense.
+          unset($field_handler->options['link_to_node']);
+          // Add HTML markup.
+          $totals[$field_name] = $field_handler->theme($row_template);
+        }
+      }
+    }
+    return $totals;
   }
 
   /**
@@ -346,7 +358,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // Store the $sort for later use.
     $this->active = $sort;
 
-    // Tell the field to click sort, but only if it is not aggregated, in
+    // Tell the field to click-sort, but only if it is not aggregated, in
     // which case sorting will be dealt with in $this->pre_render().
     // This is here predominantly to avoid notices from ViewsPHP, but also
     // makes normal column sorting more efficient by not adding any unnecessary

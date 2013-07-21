@@ -134,7 +134,7 @@ function views_aggregator_count($groups, $field_handler, $group_value = NULL, $c
     if (isset($value)) {
       $count = 0;
       foreach ($rows as $row) {
-        $cell = views_aggregator_get_cell($field_handler, $row, TRUE);
+        $cell = views_aggregator_get_cell($field_handler, $row);
         if ($cell == $value) {
           $count++;
         }

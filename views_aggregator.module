@@ -128,7 +128,7 @@ function views_aggregator_get_cell($field_handler, $result_row, $themed = FALSE)
  * @return string $error
  *   Error message or NULL if all is well.
  */
-function views_aggregator_set_cell($field_handler, $result_row, $row_num, $simple_value) {
+function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
   $field_name = $field_handler->options['id'];
   $field_alias = $field_handler->field_alias;
   $error = NULL;
@@ -176,15 +176,15 @@ function views_aggregator_set_cell($field_handler, $result_row, $row_num, $simpl
 /**
  * Set a column of group values on the view.
  *
- * @param object $view
- *   the View object
+ * @param array $groups
+ *   an array of row groups, indexed by group value
  * @param object $field_handler
  *   the column handler
  * @param array $group_values
  *   the values to set, indexed by group
  */
-function views_aggregator_set_column($view, $field_handler, $group_values) {
-  foreach ($view->group as $group => $rows) {
+function views_aggregator_set_column($groups, $field_handler, $group_values) {
+  foreach ($groups as $group => $rows) {
     if ($group != 'column' && isset($group_values[$group])) {
       foreach ($rows as $num => $row) {
         $error = views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);

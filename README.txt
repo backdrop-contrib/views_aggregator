@@ -8,10 +8,9 @@ this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
 o can aggregate on ViewsPHP expressions
-o aggregation functions can take arguments (currently used by "Replace group by
-  text" only)
-o can return the most or least frequently occurring member
 o lets you add your own custom aggregation functions to the existing set
+o aggregation functions can take arguments, as currently employed by "Label"
+  and "Count (by value)"
 
 Basics Recap: what is aggregation again?
 ----------------------------------------
@@ -85,20 +84,16 @@ So in the Advanced field set (upper right) set "Use aggregation: No".
 
 LIMITATIONS
 -----------
-o Most of Views tabular output functions have been replicated in this plugin,
-  even when ViewsPHP is used.
-o Column sorting and token support seem mostly ok.
-o CSS styling options (striping, table and row classes) work.
-o Combining the output of multiple columns and putting it in another works ok.
 o Views-style table grouping, which different from aggregation, interferes with
   this plugin, so is not available.
 o When you apply two aggregation functions on the same field, the 2nd function
   gets applied on the results of the first -- normally not what you want
-o For technical reasons, when enumerating group members, hyperlink markup is
-  automatically dropped; the members appear in plain text.
-o Aggregation functions on entity ids work, but is likely to affect hyperlink
-  markup if the affected entities are used in other columns.
-o Dates and images cannot be enumerated (yet).
+o For technical reasons, hyperlink markup is automatically dropped in certain
+  situations.
+o While multi-valued fields (AddressField, Date ranges) can be grouped &
+  compressed, most aggregation functions won't work on multi-valued fields. The
+  same is true for taxonomy terms. Put the desired aggregation function on
+  another column.
 
 TIPS FOR USING VIEWS PHP MODULE
 -------------------------------
@@ -131,4 +126,3 @@ https://drupal.org/node/1219356#comment-6909160
 https://drupal.org/node/1300900
 https://drupal.org/node/1791796
 https://drupal.org/node/1140896#comment-7657061
-

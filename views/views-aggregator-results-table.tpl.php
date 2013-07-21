@@ -58,7 +58,7 @@
           foreach (array_keys(reset($rows)) as $field):
         ?>
           <th <?php if (!empty($field_classes[$field])): ?>class="<?php print reset($field_classes[$field]); ?>"<?php endif ?>>
-            <?php print $footer[$field]; ?>
+            <?php print isset($footer[$field]) ? $footer[$field] : ''; ?>
           </th>
         <?php endforeach ?>
       </tr>
