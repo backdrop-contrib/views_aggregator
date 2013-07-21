@@ -107,7 +107,8 @@ function views_aggregator_get_cell($field_handler, $result_row, $themed = FALSE)
   if (is_array($value)) {
     $value = reset($value);
     if (is_array($value)) {
-      $value = reset($value);
+      // RdB this is me experimenting with AddressField
+      $value = /*isset($value['postal_code']) ? $value['postal_code'] : */reset($value);
     }
   }
   return $value;
@@ -133,6 +134,8 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
   $field_alias = $field_handler->field_alias;
   $error = NULL;
   // See if we're dealing with a field, as opposed to views_handler_field_node.
+
+  // This is hacky... @todo
   if (is_a($field_handler, 'views_handler_field_field')) {
     // The new value needs to be set in two places. First in _field_data[]...
     // All of the foreach's below loop only once...
@@ -140,7 +143,7 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
     foreach ($languages as $lang => $item) {
       foreach ($item as $i => $values) {
         if (count($values) > 1) {
-          $error = t('Views Aggregator Plus: cannot set multi-valued field %field.', array(
+          return t('Views Aggregator Plus: cannot set multi-valued field %field.', array(
            '%field' => $field_name
           ));
         }
@@ -148,7 +151,7 @@ function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simp
           // Most fields: $name == 'value'
           // Taxonomy term: $name == 'tid'
           if ($name == 'tid' && !is_numeric($simple_value)) {
-            $error = t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
+            return t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
               '%field' => $field_name, '%value' => $value, '%new-value' => $simple_value,
             ));
           }

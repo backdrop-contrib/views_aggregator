@@ -213,10 +213,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       foreach ($functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
         $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
-        $return = $function($groups, $field_handler, $group_par, $column_par);
-        if (!empty($return)) {
-           // $todo array_merge($values[$field_name], $return); preserve index
-          $values[$field_name] = $return;
+        $aggr_values = $function($groups, $field_handler, $group_par, $column_par);
+        // $aggr_values is indexed by groups or 'column'.
+        foreach ($aggr_values as $group => $value) {
+          $values[$field_name][$group] = $value;
         }
       }
     }
@@ -262,7 +262,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           $must_set = $options['aggr'] != array('views_aggregator_group_and_compress' => 'views_aggregator_group_and_compress');
         }
         if ($must_set) {
-          // Set the group's value belonging to this field.
+          // Set all group values belonging to this field/column.
           views_aggregator_set_column($groups, $field_handler, $values[$field_name]);
         }
       }
