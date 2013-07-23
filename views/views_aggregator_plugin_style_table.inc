@@ -220,6 +220,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
       }
     }
+    unset($groups['column']);
+
     // Write group aggregation results into the groups.
     $this->views_aggregator_set_aggregated_group_values($groups, $values);
 
@@ -240,9 +242,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // Sort the table based on the selected sort column, i.e. $this->active.
       uasort($groups, array($this, '_views_aggregator_compare_rows'));
     }
+    // Write group aggregation result rows on the View.
     $this->view->group = $groups;
-
-    // Write column aggregation results on the View
+    // Write column aggregation result row on the View.
     $this->view->totals = $this->views_aggregator_set_totals($values);
   }
 
