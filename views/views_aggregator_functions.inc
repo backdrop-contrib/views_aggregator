@@ -18,22 +18,37 @@
  */
 function views_aggregator_views_aggregation_functions_info() {
   $functions = array(
-    // This first one is special.
+    // The first two are special and must be executed before the others.
+    'views_aggregator_row_filter' => array(
+      'group' => t('Filter rows (by regexp)'),
+      'column' => NULL,
+    ),
     'views_aggregator_group_and_compress' => array(
       'group' => t('Group and compress'),
       'column' => NULL,
     ),
-    'views_aggregator_count' => array(
-      'group' => t('Count (having value)'),
-      'column' => t('Count (having value)')
-    ),
-    'views_aggregator_sum' => array(
-      'group' => t('Sum'),
-      'column' => t('Sum'),
-    ),
+
+    /* Regular aggregation functions star here */
+
     'views_aggregator_average' => array(
       'group' => t('Average'),
       'column' => t('Average'),
+    ),
+    'views_aggregator_count' => array(
+      'group' => t('Count (having regexp)'),
+      'column' => t('Count (having regexp)')
+    ),
+    'views_aggregator_first' => array(
+      'group' => t('Display first member'),
+      'column' => NULL,
+    ),
+    'views_aggregator_enumerate' => array(
+      'group' => t('Enumerate'),
+      'column' => NULL,
+    ),
+    'views_aggregator_replace' => array(
+      'group' => t('Label (enter below)'),
+      'column' => t('Label (enter below)'),
     ),
     'views_aggregator_maximum' => array(
       'group' => t('Maximum'),
@@ -41,35 +56,64 @@ function views_aggregator_views_aggregation_functions_info() {
     ),
     'views_aggregator_minimum' => array(
       'group' => t('Minimum'),
-      'column' => t('Minimum '),
+      'column' => t('Minimum'),
     ),
-    'views_aggregator_enumerate' => array(
-      'group' => t('Enumerate members'),
-      'column' => NULL,
+    'views_aggregator_sum' => array(
+      'group' => t('Sum'),
+      'column' => t('Sum'),
     ),
     'views_aggregator_tally' => array(
       'group' => t('Tally members'),
       'column' => NULL,
-    ),
-    'views_aggregator_first' => array(
-      'group' => t('Display first member'),
-      'column' => NULL,
-    ),
-    'views_aggregator_replace' => array(
-      'group' => t('Label (enter below)'),
-      'column' => t('Label (enter below)'),
     ),
   );
   return $functions;
 }
 
 /**
+ * Keeps only the groups that match the regular expression filter.
+ *
+ * Matching takes place on the raw values (1000, rather than "$ 1,000").
+ *
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object $field_handler
+ *   the handler for the view column to count groups members in
+ * @parm string $regexp
+ *   if empty all result rows are kept
+ *
+ * @return array
+ *   a subset of the original array of groups
+ */
+function views_aggregator_row_filter($views_plugin_style, $field_handler, $regexp = NULL) {
+  if (empty($regexp)) {
+    return;
+  }
+  if (preg_match('/[a-zA-Z0-9]+/', $regexp)) {
+    // Interprt omitted brace chars in the regexp as a verbatim text match.
+    $regexp = "/$regexp/";
+  }
+  foreach ($views_plugin_style->view->result as $num => $row) {
+    $field_value = views_aggregator_get_cell($field_handler, $num, FALSE);
+    if (!preg_match($regexp, $field_value)) {
+      //$field_value = views_aggregator_get_cell($field_handler, $num, TRUE);
+      //if (!preg_match($regexp, $field_value)) {
+      unset($views_plugin_style->rendered_fields[$num]);
+      unset($views_plugin_style->view->result[$num]);
+      //}
+    }
+  }
+}
+
+/**
  * Aggregates the supplied view results into grouped rows.
  *
  * This function must be selected for one column (field) in the results table.
+ * Its parameters and return value are different from the other aggregation
+ * functions.
  *
- * @param object $view
- *   the view object with query results
+ * @param object $view_results
+ *   the result rows as they appear on the view object
  * @param object $field_handler
  *   the handler for the view column to group rows on
  *
@@ -79,7 +123,7 @@ function views_aggregator_views_aggregation_functions_info() {
 function views_aggregator_group_and_compress($view_results, $field_handler) {
   $groups = array();
   foreach ($view_results as $num => $row) {
-    $group_value = views_aggregator_get_cell($field_handler, $row, TRUE);
+    $group_value = views_aggregator_get_cell($field_handler, $num, TRUE);
     $groups[$group_value][$num] = $row;
   }
   return $groups;
@@ -102,8 +146,8 @@ function views_aggregator_average($groups, $field_handler) {
   $count_all_rows = 0;
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
-    foreach ($rows as $row) {
-      $sum += views_aggregator_get_cell($field_handler, $row);
+    foreach ($rows as $num => $row) {
+      $sum += views_aggregator_get_cell($field_handler, $num, FALSE);
     }
     $values[$group] = $sum / count($rows);
     $sum_column += $sum;
@@ -122,26 +166,30 @@ function views_aggregator_average($groups, $field_handler) {
  *   the handler for the view column to count groups members in
  * @parm string $value
  *   an optional value to count, if omitted all group values count
- * 
+ *
  * @return array
  *   an array of column values, one for each group and one for the column
  */
-function views_aggregator_count($groups, $field_handler, $group_value = NULL, $column_value = NULL) {
+function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $column_regexp = NULL) {
   $values = array();
   $count_column = 0;
-  $value = isset($group_value) ? $group_value : $column_value;
+  $regexp = isset($group_regexp) ? $group_regexp : $column_regexp;
+  if (preg_match('/[a-zA-Z0-9]+/', $regexp)) {
+    // Interprt omitted brace chars in the regexp as a verbatim text match.
+    $regexp = "/$regexp/";
+  }
   foreach ($groups as $group => $rows) {
-    if (isset($value)) {
+    if (empty($regexp)) {
+      $count = count($rows);
+    }
+    else {
       $count = 0;
-      foreach ($rows as $row) {
-        $cell = views_aggregator_get_cell($field_handler, $row);
-        if ($cell == $value) {
+      foreach ($rows as $num => $row) {
+        $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
+        if (preg_match($regexp, $cell)) {
           $count++;
         }
       }
-    }
-    else {
-      $count = count($rows);
     }
     $values[$group] = $count;
     $count_column += $count;
@@ -165,8 +213,8 @@ function views_aggregator_enumerate($groups, $field_handler) {
   $values = array();
   foreach ($groups as $group => $rows) {
     $cell_values = array();
-    foreach ($rows as $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row);
+    foreach ($rows as $num => $row) {
+      $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
       if (!empty($cell) && !in_array($cell, $cell_values)) {
         $cell_values[] = $cell;
       }
@@ -176,12 +224,8 @@ function views_aggregator_enumerate($groups, $field_handler) {
       // entity. Cannot easily support hyper-linking, so switch it off.
       unset($field_handler->options['link_to_node']);
       @sort($cell_values, SORT_NATURAL | SORT_FLAG_CASE);
-      $values[$group] = implode(', ', $cell_values);
     }
-    else {
-      // Leave the original cell value as is.
-      $values[$group] = NULL;
-    }
+    $values[$group] = implode('<br/>', $cell_values);
   }
   return $values;
 }
@@ -216,10 +260,14 @@ function views_aggregator_first($groups, $field_handler) {
 function views_aggregator_maximum($groups, $field_handler) {
   $values = array();
   foreach ($groups as $group => $rows) {
-    $maximum = views_aggregator_get_cell($field_handler, reset($rows));
-    while ($row = next($rows)) {
-      $value = views_aggregator_get_cell($field_handler, $row);
-      if ($value > $maximum) {
+    $is_first = TRUE;
+    foreach ($rows as $num => $row) {
+      $value = views_aggregator_get_cell($field_handler, $num, FALSE);
+      if ($is_first) {
+        $value = $maximum;
+        $is_first = FALSE;
+      }
+      elseif ($value > $maximum) {
         $maximum = $value;
       }
     };
@@ -246,10 +294,14 @@ function views_aggregator_maximum($groups, $field_handler) {
 function views_aggregator_minimum($groups, $field_handler) {
   $values = array();
   foreach ($groups as $group => $rows) {
-    $minimum = views_aggregator_get_cell($field_handler, reset($rows));
-    while ($row = next($rows)) {
-      $value = views_aggregator_get_cell($field_handler, $row);
-      if ($value < $minimum) {
+    $is_first = TRUE;
+    foreach ($rows as $num => $row) {
+      $value = views_aggregator_get_cell($field_handler, $num, FALSE);
+      if ($is_first) {
+        $value = $minimum;
+        $is_first = FALSE;
+      }
+      elseif ($value < $minimum) {
         $minimum = $value;
       }
     };
@@ -312,8 +364,8 @@ function views_aggregator_sum($groups, $field_handler) {
   $sum_column = 0.0;
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
-    foreach ($rows as $row) {
-      $sum += views_aggregator_get_cell($field_handler, $row);
+    foreach ($rows as $num => $row) {
+      $sum += views_aggregator_get_cell($field_handler, $num, FALSE);
     };
     $values[$group] = $sum;
     $sum_column += $sum;
@@ -338,9 +390,9 @@ function views_aggregator_tally($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $tally = array();
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $row);
+      $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
       if (empty($cell)) {
-        // No tallying empty values.
+        // Not tallying empty values.
         $values[$group] = NULL;
         break;
       }
@@ -362,7 +414,7 @@ function views_aggregator_tally($groups, $field_handler) {
     foreach ($tally as $cell => $count) {
       $rendered_tally[] = "$cell ($count)";
     }
-    $values[$group] = implode(', ', $rendered_tally);
+    $values[$group] = implode('<br/>', $rendered_tally);
   }
   return $values;
 }

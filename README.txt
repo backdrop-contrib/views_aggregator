@@ -7,10 +7,11 @@ said himself. This is where this module comes in. Unlike Views and ViewsCalc,
 this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
-o can aggregate on ViewsPHP expressions
+o can aggregate on ViewsPHP code snippets
+o can filter rows on regular expressions (regexp)
 o lets you add your own custom aggregation functions to the existing set
-o aggregation functions can take arguments, as currently employed by "Label"
-  and "Count (by value)"
+o aggregation functions can take parameters, as currently employed by "Filter
+  rows", "Count" and "Label".
 
 Basics Recap: what is aggregation again?
 ----------------------------------------
@@ -80,27 +81,35 @@ under Format, click and select "Table with aggregation options". Having arrived
 at the Settings page, follow the hints under the header "Style Options".
 There are no permissions or global configurations.
 Views Aggregator Plus does not combine well with Views' native aggregation.
-So in the Advanced field set (upper right) set "Use aggregation: No".
+So in the Advanced section (upper right) set "Use aggregation: No".
+
+REGEXPS
+-------
+Some aggregation functions, like "Filter rows" and "Count" take a regular
+expression as a parameter. In its simplest form a regular expression is a word
+or part of a word you want to filter on. You may omit the special '/' brackets
+around the parameter if you use regexps in this way. So "red" and "/red/" are
+equivalent.
+Here are some more regexps
+
+/RED/i    targets rows that contain the word "red" in the field specified,
+          case-insensitive
+
+Ref:
 
 LIMITATIONS
 -----------
-o Views-style table grouping, which different from aggregation, interferes with
-  this plugin, so is not available.
+o Views-style table grouping, whereby the original table is split into smaller
+  ones, interferes with this plugin, so is not available.
 o When you apply two aggregation functions on the same field, the 2nd function
-  gets applied on the results of the first -- normally not what you want
-o For technical reasons, hyperlink markup is automatically dropped in certain
-  situations.
-o While multi-valued fields (AddressField, Date ranges) can be grouped &
-  compressed, most aggregation functions won't work on multi-valued fields. The
-  same is true for taxonomy terms. Put the desired aggregation function on
-  another column.
+  gets applied on the results of the first -- not always what you want.
 
 TIPS FOR USING VIEWS PHP MODULE
 -------------------------------
 Use "Output code", not "Value code", as in the "Value code" area few Views
 results are available. Here are some examples of the syntax to use for various
-field types for access in the Output code textarea. Note that to display
-these values you need to put "echo" in front of the expression. And use the
+field types for access in the Output code text area. Note that to display
+these values you need to put "echo" in front of the expression and place the
 <?php and ?> "brackets" around everything.
 
 // General fields, say a field named "Total", machine name: "field_total"
@@ -112,7 +121,7 @@ $data->field_field_total[0]['rendered']['#markup'] // $ 1,000.00
 Raw start: $data->field_field_duration[0]['raw']['value']// 2013-06-02 00:00:00
 Raw end: $data->field_field_duration[0]['raw']['value2'] // 2013-06-04 00:00:00
 Rendered: $data->field_field_duration[0]['rendered']['#markup'];  //"Sun
-02-Jun-2013 to Wed 04-Jun-2013"
+ 02-Jun-2013 to Wed 04-Jun-2013"
 
 // Taxonomy terms, machine name: "field_industry"
 Raw: $data->field_field_industry[0]['raw']['tid']

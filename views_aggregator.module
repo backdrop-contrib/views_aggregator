@@ -85,120 +85,86 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
  * @param object $field_handler
  *   The handler associated with the table column being requested.
  *
- * @param object $result_row
- *   The result row object
+ * @param object $row_num
+ *   index into the View result rows array
  *
- * @param object $themed
- *   Whether to return the themed as opposed to the raw value of the cell
+ * @param object $rendered
+ *   Whether to return the rendered as opposed to the raw value of the cell
  *
  * @return string
  */
-function views_aggregator_get_cell($field_handler, $result_row, $themed = FALSE) {
-  // get_value($result_row) may produce values like value[0]['tid'] == 37
-  // That's why render() won't work as it expects value_raw to be a simple value
-  // As lighter alternative to theme() consider advanced_render();
-  $value = $themed ? $field_handler->theme($result_row) : $field_handler->get_value($result_row);
-  if (!isset($value) && !$themed) {
-    // This may happen with a $field_handler like views_php_handler_field that
-    // doesn't have its value available until after rendering. Render it here.
-    $value = $field_handler->render($result_row);
-  }
-  // The following is somewhat heuristic -- @todo
-  if (is_array($value)) {
-    $value = reset($value);
-    if (is_array($value)) {
-      // RdB this is me experimenting with AddressField
-      $value = /*isset($value['postal_code']) ? $value['postal_code'] : */reset($value);
-    }
-  }
-  return $value;
+function views_aggregator_get_cell($field_handler, $row_num, $rendered) {
+  return $field_handler->view->style_plugin->get_cell($field_handler, $row_num, $rendered);
 }
 
 /**
- * Sets a value on the cell identified by the supplied column and row.
+ * Render a field from a raw value, with or without affecting the View result.
  *
- * @param object $field_handler
- *   The handler associated with the table column being requested.
- * @param object $result_row
- *   The result row object.
- * @param int $row_num
- *   The result row number. Required for fields, not for properties or PHP.
- * @param mixed $simple_value
- *   The raw (not marked-up) value to set, a number or string.
+ * The field will be rendered without label, with appropriate CSS classes.
  *
- * @return string $error
- *   Error message or NULL if all is well.
+ * NB: This is messy code. The lengths we have to go through for this are just
+ * ridiculous. Patches welcome!
+ *
+ * @param object $views_field_handler
+ *   The views_handler_field_field object belonging to the View result field
+ * @param $row_num
+ *   The view result row number to change. Pass NULL to simply render $raw_value
+ *   outside the context of a View, without affecting any rows.
+ * @param mixed $raw_value
+ *   Compound or simple value. If NULL the field is re-rendered using its
+ *   current (raw) value.
+ *
+ * @return string
+ *   The rendered value or FALSE, if the type of field is not supported.
  */
-function views_aggregator_set_cell($field_handler, &$result_row, $row_num, $simple_value) {
-  $field_name = $field_handler->options['id'];
-  $field_alias = $field_handler->field_alias;
-  $error = NULL;
-  // See if we're dealing with a field, as opposed to views_handler_field_node.
+function views_aggregator_render_field($views_field_handler, $row_num = NULL, $raw_value = NULL) {
+  $field_alias = $views_field_handler->field_alias;
+  $row = isset($row_num) ? $views_field_handler->view->result[$row_num] : reset($views_field_handler->view->result);
+  if (!$row || empty($row->_field_data[$field_alias])) {
+    // This happens for ViewsPHP fields, for instance.
+    return !$row || isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : '?');
+  }
+  $_field_data = $row->_field_data[$field_alias];
+  $field_name = $views_field_handler->options['id'];
+  if (!is_array($_field_data['entity']->{$field_name})) {
+    // E.g. when the $views_field_handler refers to a node property (rather than
+    // a field) that does not have a renderer.
+    return isset($row_num) ? ($_field_data['entity']->{$field_name} = $raw_value) : $raw_value;
+  }
+  // Clone entity if we don't want to affect the current View results.
+  $entity = isset($row_num) ? $_field_data['entity'] : clone $_field_data['entity'];
+  $entity_type = $_field_data['entity_type'];
 
-  // This is hacky... @todo
-  if (is_a($field_handler, 'views_handler_field_field')) {
-    // The new value needs to be set in two places. First in _field_data[]...
-    // All of the foreach's below loop only once...
-    $languages = $result_row->_field_data[$field_alias]['entity']->{$field_name};
-    foreach ($languages as $lang => $item) {
-      foreach ($item as $i => $values) {
-        if (count($values) > 1) {
-          return t('Views Aggregator Plus: cannot set multi-valued field %field.', array(
-           '%field' => $field_name
-          ));
+  $lang = is_a($views_field_handler, 'views_handler_field_field') ? $views_field_handler->field_language($entity_type, $entity) : $entity->language;
+  if (isset($raw_value)) {
+    // Only supporting values of 1 item, at index 0.
+    if (is_array($raw_value)) {
+      $entity->{$field_name}[$lang][0] = $raw_value;
+    }
+    else {
+      foreach ($entity->{$field_name}[$lang][0] as $name => $value) {
+        if ($name != 'value' && !($name == 'tid' && is_numeric($raw_value))) {
+          return isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : $value);
         }
-        foreach ($values as $name => $value) {
-          // Most fields: $name == 'value'
-          // Taxonomy term: $name == 'tid'
-          if ($name == 'tid' && !is_numeric($simple_value)) {
-            return t('Views Aggregator Plus: cannot change taxonomy term %field from %value to non-numeric value "%new-value".', array(
-              '%field' => $field_name, '%value' => $value, '%new-value' => $simple_value,
-            ));
-          }
-          $result_row->_field_data[$field_alias]['entity']->{$field_name}[$lang][$i][$name] = $simple_value;
-          break;
-        }
-        break;
+        // tid may be set in case of min, max, most frequent etc.
+        $entity->{$field_name}[$lang][0][$name] = $raw_value;
       }
     }
-    // Next employ set_items() to re-render the _field_data[] updated above,
-    // placing both the 'raw' and 'rendered' versions in field_...[].
-    $result_row->{'field_' . $field_name} = $field_handler->set_items($result_row, $row_num);
-    return $error;
-  }
-  if (is_a($field_handler, 'views_php_handler_field')) {
-    // This prevents Views PHP from re-rendering the code snippet and makes it
-    // pick up the value from $result_row, as set in the statement below.
-    $field_handler->options['php_output'] = FALSE;
-  }
-  // PHP or plain node property, not a field. Example: 'node_title'.
-  $result_row->{$field_alias} = $simple_value;
-  return $error;
-}
-
-/**
- * Set a column of group values on the view.
- *
- * @param array $groups
- *   an array of row groups, indexed by group value
- * @param object $field_handler
- *   the column handler
- * @param array $group_values
- *   the values to set, indexed by group
- */
-function views_aggregator_set_column($groups, $field_handler, $group_values) {
-  foreach ($groups as $group => $rows) {
-    if ($group != 'column' && isset($group_values[$group])) {
-      foreach ($rows as $num => $row) {
-        $error = views_aggregator_set_cell($field_handler, $row, $num, $group_values[$group]);
-        if ($error) {
-          drupal_set_message($error, 'warning', FALSE);
-        }
-        // Only have to do the first row of the group.
-        break;
-      }
+    if (isset($row_num)) {
+      // Next employ set_items() to re-render the $entity updated above,
+      // placing both the 'raw' and 'rendered' versions in field_...[].
+      $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
+      // The final step is to theme the rendered values.
+      return $views_field_handler->theme($row); // alt: $views_field_handler->advanced_render($row);
     }
   }
+  $display = array(
+    'type' => $views_field_handler->options['type'],
+    'settings' => $views_field_handler->options['settings'],
+    'label' => 'hidden',
+  );
+  $render_array = field_view_field($entity_type, $entity, $field_name, $display, $lang);
+  return drupal_render($render_array);
 }
 
 /**
@@ -210,25 +176,22 @@ function views_aggregator_set_column($groups, $field_handler, $group_values) {
  * template_preprocess_views_view_table(&$vars) in Views
  */
 function template_preprocess_views_aggregator_results_table(&$vars) {
-  $view = &$vars['view'];
-
-  if (!empty($view->group)) {
-    unset($view->style_plugin->rendered_fields);
-    $vars['rows'] = array();
-    // Note: at this stage each group consist of one row, i.e. count($rows)==1.
-    foreach ($view->group as $rows) {
-      $vars['rows'][] = reset($rows);
-    }
-  }
+  $view = $vars['view'];
   if (!empty($view->totals) && array_filter($view->totals) != array()) {
     $vars['footer'] = $view->totals;
   }
-  unset($view->group);
-  unset($view->totals);
+
   if (!isset($view->row_index)) {
     // Have seen trouble when this is not set...
-    $view->row_index = '';
+    $view->row_index = 0;
   }
-  // Now render as per normal.
+  // At this point template_preprocess_views_view(), will have put the (sorted)
+  // $view->result on $vars['rows'].
+  // template_preprocess_views_view_table() will add row and field classes,
+  // caption etc. It will also call render_fields() but that won't do anything
+  // as we've already done the rendering in view_aggregator_plugin_style_table::
+  // pre_render().
+  // The order of the rendered rows is determined by $view->result, while the
+  // content of each row comes from $view->style_plugin->rendered_fields.
   template_preprocess_views_view_table($vars);
 }
