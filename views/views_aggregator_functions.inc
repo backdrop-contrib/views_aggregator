@@ -89,7 +89,7 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
   if (empty($regexp)) {
     return;
   }
-  if (preg_match('/[a-zA-Z0-9]+/', $regexp)) {
+  if (preg_match('/[a-zA-Z0-9_]+/', $regexp)) {
     // Interprt omitted brace chars in the regexp as a verbatim text match.
     $regexp = "/$regexp/";
   }
@@ -174,7 +174,7 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
   $values = array();
   $count_column = 0;
   $regexp = isset($group_regexp) ? $group_regexp : $column_regexp;
-  if (preg_match('/[a-zA-Z0-9]+/', $regexp)) {
+  if (preg_match('/[a-zA-Z0-9_]+/', $regexp)) {
     // Interprt omitted brace chars in the regexp as a verbatim text match.
     $regexp = "/$regexp/";
   }

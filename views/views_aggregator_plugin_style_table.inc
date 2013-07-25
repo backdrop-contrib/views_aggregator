@@ -400,9 +400,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   private function set_bottom_row($values) {
     $totals = array();
+    $plain_number_functions = array( 'views_aggregator_count');
     foreach ($values as $field_name => $group) {
       if (isset($group['column'])) {
-        if ($this->options['info'][$field_name]['aggr_column'] == 'views_aggregator_count') {
+        if (in_array($this->options['info'][$field_name]['aggr_column'], $plain_number_functions)) {
           $totals[$field_name] = $group['column'];
         }
         else {

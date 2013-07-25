@@ -87,15 +87,18 @@ REGEXPS
 -------
 Some aggregation functions, like "Filter rows" and "Count" take a regular
 expression as a parameter. In its simplest form a regular expression is a word
-or part of a word you want to filter on. You may omit the special '/' brackets
-around the parameter if you use regexps in this way. So "red" and "/red/" are
-equivalent.
-Here are some more regexps
+or part of a word you want to filter on. You may omit the special delimiters,
+most commonly a pair of forward slashes, around the parameter if you use regexps
+in this way. So "red" and "/red/" are equivalent.
+Here are some more regexps:
 
-/RED/i    targets rows that contain the word "red" in the field specified,
-          case-insensitive
+/RED/i         targets rows that contain the word "red" in the field specified,
+               case-insensitive
+/red|blue/     rows with either the word "red" or "blue" in the field
+/^(Red|Blue)/  rows where the specified field begins with "Red" or "Blue"
+/Z[0-9]+/      the letter Z followed by one or more digits
 
-Ref:
+Ref: http://work.lauralemay.com/samples/perl.html (for PERL, but quite good)
 
 LIMITATIONS
 -----------
