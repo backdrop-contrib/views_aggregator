@@ -106,6 +106,8 @@ o Views-style table grouping, whereby the original table is split into smaller
   ones, interferes with this plugin, so is not available.
 o When you apply two aggregation functions on the same field, the 2nd function
   gets applied on the results of the first -- not always what you want.
+o Grouping, tallying and other functions may not work correctly when you have
+  the "Theme Developer" module enabled.
 
 TIPS FOR USING VIEWS PHP MODULE
 -------------------------------

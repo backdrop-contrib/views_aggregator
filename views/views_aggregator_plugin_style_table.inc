@@ -347,10 +347,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $result_row = $field_handler->view->result[$row_num];
     $is_set = TRUE;
     if (is_a($field_handler, 'views_php_handler_field')) {
-      // This prevents Views PHP from re-rendering the code snippet and makes it
-      // pick up the value from $result_row, as set in the statement below.
-      $field_handler->options['php_output'] = FALSE;
-      $result_row->{$field_alias} = $new_value;
+      if (isset($result_row->{$field_alias})) {
+        $result_row->{$field_alias} = $new_value;
+        // This prevents Views PHP from re-rendering the code snippet and makes
+        // it pick up the value from $result_row.
+        $field_handler->options['php_output'] = FALSE;
+      }
     }
     elseif (is_a($field_handler, 'views_handler_field_field')) {
       if ($rendered_value = views_aggregator_render_field($field_handler, $row_num, $new_value)) {
@@ -360,7 +362,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $is_set = FALSE;
       }
     }
-    else {
+    elseif (isset($result_row->{$field_alias})) {
       // Node property, not a field. Example: 'node_title'.
       $result_row->{$field_alias} = $new_value;
     }
@@ -486,7 +488,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $cell1 = $this->get_cell_raw($field_handler, $row1, FALSE);
     $compare_rendered = isset($cell1[0]['tid']);
     if (!$compare_rendered) {
-      $cell1 = reset($cell1[0]);
+      $cell1 = $this->get_cell_raw($field_handler, $row1, TRUE);
       $cell2 = $this->get_cell_raw($field_handler, $row2, TRUE);
       $compare_rendered = !is_numeric($cell1) || !is_numeric($cell2);
     }
