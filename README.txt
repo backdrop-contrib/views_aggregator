@@ -7,7 +7,7 @@ said himself. This is where this module comes in. Unlike Views and ViewsCalc,
 this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
-o can aggregate on ViewsPHP code snippets
+o can aggregate on ViewsPHP code-snippets
 o can filter rows on regular expressions (regexp)
 o lets you add your own custom aggregation functions to the existing set
 o aggregation functions can take parameters, as currently employed by "Filter
@@ -132,6 +132,10 @@ Rendered: $data->field_field_duration[0]['rendered']['#markup'];  //"Sun
 Raw: $data->field_field_industry[0]['raw']['tid']
 Rendered: $data->field_field_industry[0]['rendered']['#title']
 
+ACKNOWLEDGEMENT
+---------------
+The UI of this module borrows heavily from Views Calc and the work by the
+authors and contributors done on that module is gratefully acknowledged.
 
 REFs
 ----

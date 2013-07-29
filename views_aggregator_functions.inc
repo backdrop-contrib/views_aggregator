@@ -28,7 +28,7 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => NULL,
     ),
 
-    /* Regular aggregation functions star here */
+    /* Regular aggregation functions start here, in alphabetical order */
 
     'views_aggregator_average' => array(
       'group' => t('Average'),
