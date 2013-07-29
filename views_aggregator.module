@@ -6,8 +6,7 @@
  * Module implementig post-query aggregation functions for Views tables.
  */
 
-require_once 'views/views_aggregator_functions.inc';
-//require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'views_aggregator') . 'views/views_aggregator_functions.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'views_aggregator') . '/views_aggregator_functions.inc';
 
 /**
  * Implements hook_help().
