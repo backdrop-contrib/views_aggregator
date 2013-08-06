@@ -409,7 +409,12 @@ function views_aggregator_tally($groups, $field_handler) {
       // Unfortunately this applies to the entire column.
       unset($field_handler->options['link_to_node']);
     }
-    @ksort($tally, SORT_NATURAL | SORT_FLAG_CASE);
+    if (version_compare(phpversion(), '5.4.0', '>=')) {
+      ksort($tally, SORT_NATURAL | SORT_FLAG_CASE);
+    }
+    else {
+      ksort($tally);
+    }
     $rendered_tally = array();
     foreach ($tally as $cell => $count) {
       $rendered_tally[] = "$cell ($count)";
