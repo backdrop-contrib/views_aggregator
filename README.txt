@@ -79,7 +79,14 @@ HOW TO USE
 On the main Views UI page, admin/structure/views/view/YOUR-VIEW/edit/page,
 under Format, click and select "Table with aggregation options". Having arrived
 at the Settings page, follow the hints under the header "Style Options".
-There are no permissions or global configurations.
+All group aggregation functions, except "Filter rows" require exactly one field
+to be assigned the "Group and compress" function.
+Column aggregation functions may be used independently of the group aggregation
+functions. If a column aggregation function requires an argument, it may take
+it from the corresponding group aggregation function, if enabled also.
+
+There are no permissions or global module configurations.
+
 Views Aggregator Plus does not combine well with Views' native aggregation.
 So in the Advanced section (upper right) set "Use aggregation: No".
 

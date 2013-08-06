@@ -20,7 +20,7 @@ function views_aggregator_views_aggregation_functions_info() {
   $functions = array(
     // The first two are special and must be executed before the others.
     'views_aggregator_row_filter' => array(
-      'group' => t('Filter rows (by regexp)'),
+      'group' => t('Filter rows (by regexp) *'),
       'column' => NULL,
     ),
     'views_aggregator_group_and_compress' => array(
@@ -35,8 +35,8 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => t('Average'),
     ),
     'views_aggregator_count' => array(
-      'group' => t('Count (having regexp)'),
-      'column' => t('Count (having regexp)')
+      'group' => t('Count (having regexp) *'),
+      'column' => t('Count (having regexp) *')
     ),
     'views_aggregator_first' => array(
       'group' => t('Display first member'),
@@ -47,8 +47,8 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => NULL,
     ),
     'views_aggregator_replace' => array(
-      'group' => t('Label (enter below)'),
-      'column' => t('Label (enter below)'),
+      'group' => t('Label (enter below) *'),
+      'column' => t('Label (enter below) *'),
     ),
     'views_aggregator_maximum' => array(
       'group' => t('Maximum'),
