@@ -81,9 +81,9 @@ under Format, click and select "Table with aggregation options". Having arrived
 at the Settings page, follow the hints under the header "Style Options".
 All group aggregation functions, except "Filter rows" require exactly one field
 to be assigned the "Group and compress" function.
-Column aggregation functions may be used independently of the group aggregation
+Column aggregation functions may be used independently of group aggregation
 functions. If a column aggregation function requires an argument, it may take
-it from the corresponding group aggregation function, if enabled also.
+it from the corresponding group aggregation function, if also enabled.
 
 There are no permissions or global module configurations.
 
@@ -94,9 +94,9 @@ REGEXPS
 -------
 Some aggregation functions, like "Filter rows" and "Count" take a regular
 expression as a parameter. In its simplest form a regular expression is a word
-or part of a word you want to filter on. You may omit the special delimiters,
-most commonly a pair of forward slashes, around the parameter if you use regexps
-in this way. So "red" and "/red/" are equivalent.
+or part of a word you want to filter on. If you use regexps in this way, you may
+omit the special delimiters around the parameter, most commonly a pair of
+forward slashes. So "red" and "/red/" are equivalent.
 Here are some more regexps:
 
 /RED/i         targets rows that contain the word "red" in the field specified,

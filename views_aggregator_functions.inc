@@ -175,7 +175,7 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
   $count_column = 0;
   $regexp = isset($group_regexp) ? $group_regexp : $column_regexp;
   if (preg_match('/[a-zA-Z0-9_]+/', $regexp)) {
-    // Interprt omitted brace chars in the regexp as a verbatim text match.
+    // Interpret omitted brace chars in the regexp as a verbatim text match.
     $regexp = "/$regexp/";
   }
   foreach ($groups as $group => $rows) {
@@ -264,7 +264,7 @@ function views_aggregator_maximum($groups, $field_handler) {
     foreach ($rows as $num => $row) {
       $value = views_aggregator_get_cell($field_handler, $num, FALSE);
       if ($is_first) {
-        $value = $maximum;
+        $maximum = $value;
         $is_first = FALSE;
       }
       elseif ($value > $maximum) {
@@ -298,7 +298,7 @@ function views_aggregator_minimum($groups, $field_handler) {
     foreach ($rows as $num => $row) {
       $value = views_aggregator_get_cell($field_handler, $num, FALSE);
       if ($is_first) {
-        $value = $minimum;
+        $minimum = $value;
         $is_first = FALSE;
       }
       elseif ($value < $minimum) {

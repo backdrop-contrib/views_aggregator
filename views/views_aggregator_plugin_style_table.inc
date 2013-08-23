@@ -201,12 +201,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $groups['column'][$num] = $row;
       }
     }
-
     // Now call all the aggregation functions selected for each of the fields.
     $values = array();
     foreach ($this->options['info'] as $field_name => $options) {
       // Make a list of the group and column functions to call for this field.
-      $functions = empty($options['has_aggr_column']) ? array() : array($options['aggr_column']);
+      $functions = array();
       if (!empty($options['has_aggr'])) {
         foreach ($options['aggr'] as $function) {
           if ($function != 'views_aggregator_row_filter' && $function != 'views_aggregator_group_and_compress' && !in_array($function, $functions)) {
@@ -214,16 +213,23 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           }
         }
       }
+      // Column aggregation function, if requested, is last.
+      if (!empty($options['has_aggr_column'])) {
+        $functions[] = $options['aggr_column'];
+      }
       $field_handler = $this->view->field[$field_name];
 
-      // Now execute the selected aggregation functions on this field.
+      // Now execute the selected aggregation function(s) on this field.
       foreach ($functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
         $column_par = (!isset($options['aggr_par_column']) || $options['aggr_par_column'] == '') ? NULL : $options['aggr_par_column'];
         $aggr_values = $function($groups, $field_handler, $group_par, $column_par);
-        // $aggr_values is indexed by groups or 'column'.
+        // $aggr_values is indexed by group value or 'column'.
         foreach ($aggr_values as $group => $value) {
-          $values[$field_name][$group] = $value;
+          // 'column' function is last so may override earlier value.
+          if ($group == 'column' || !isset($values[$field_name][$group])) {
+            $values[$field_name][$group] = $value;
+          }
         }
       }
     }
