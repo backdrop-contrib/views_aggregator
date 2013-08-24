@@ -38,7 +38,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     unset($form['grouping']);
 
     $form['description_markup'] = array(
-      '#markup' => '<div class="description form-item">' . t('Column aggregation functions may be enabled independently of group aggregation functions. Every group aggregation functions, except <em>Filter rows (by regexp),</em>, requires exactly <strong>one</strong> field to be assigned the <em>Group and compress</em> function. With that done, select any of the other aggregation functions for some or all of the fields. Functions marked with an asterisk take an optional parameter. <br/>You may combine multiple fields into the same column. If you do, the separator specified will be used to separate the fields. You may control column order and field labels in the Fields section of the main configuration page.') . '</div>',
+      '#markup' => '<div class="description form-item">' . t('Column aggregation functions may be enabled independently of group aggregation functions. Every group aggregation function, except <em>Filter rows (by regexp)</em>, requires exactly <strong>one</strong> field to be assigned the <em>Group and compress</em> function. With that done, select any of the other aggregation functions for some or all of the fields. Functions marked with an asterisk take an optional parameter. <br/>You may combine multiple fields into the same column. If you do, the separator specified will be used to separate the fields. You may control column order and field labels in the Fields section of the main configuration page.') . '</div>',
     );
 
     $columns = $this->sanitize_columns($this->options['columns']);
@@ -169,6 +169,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function pre_render($results) {
     parent::pre_render($results);
+
+    if (empty($this->view->result)) {
+      return;
+    }
 
     // Because we are going to need the View results AFTER token replacement,
     // we render the result set here. This is NOT duplication of CPU time,

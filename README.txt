@@ -2,9 +2,8 @@
 VIEWS AGGREGATOR PLUS
 =====================
 Because the Views and ViewsCalc modules rely on the database to perform
-aggregation, you only have limited options at your disposal. As the great Merlin
-said himself. This is where this module comes in. Unlike Views and ViewsCalc,
-this module:
+aggregation, you only have limited options at your disposal. That is where this
+module comes in. Unlike Views and ViewsCalc, this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
 o can aggregate on ViewsPHP code-snippets
