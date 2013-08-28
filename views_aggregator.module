@@ -84,15 +84,15 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
  * @param object $field_handler
  *   The handler associated with the table column being requested.
  *
- * @param object $row_num
+ * @param int $row_num
  *   index into the View result rows array
  *
- * @param object $rendered
+ * @param bool $rendered
  *   Whether to return the rendered as opposed to the raw value of the cell
  *
  * @return string
  */
-function views_aggregator_get_cell($field_handler, $row_num, $rendered) {
+function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) {
   return $field_handler->view->style_plugin->get_cell($field_handler, $row_num, $rendered);
 }
 
@@ -176,9 +176,13 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
  */
 function template_preprocess_views_aggregator_results_table(&$vars) {
   $view = $vars['view'];
+
   if (!empty($view->totals) && array_filter($view->totals) != array()) {
-    $vars['footer'] = $view->totals;
+    $vars['totals'] = $view->totals;
   }
+  $vars['totals_row_position'] =
+    $view->style_plugin->options['totals_row_position'][1] +
+    $view->style_plugin->options['totals_row_position'][2];
 
   if (!isset($view->row_index)) {
     // Have seen trouble when this is not set...
@@ -193,4 +197,45 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
   // The order of the rendered rows is determined by $view->result, while the
   // content of each row comes from $view->style_plugin->rendered_fields.
   template_preprocess_views_view_table($vars);
+}
+
+/**
+ * Strips the pager off an existing View display, then executes and renders it.
+ *
+ * The View is rebuilt from scratch, with the extra pager query. The View
+ * passed in as an argument is in no way affected.
+ *
+ * @param object $view_with_pager
+ *   a View object
+ *
+ * @param object $display_id
+ *   the display to execute, for example 'master', 'page', 'block'
+ *
+ * @return object
+ *   the pageless View, including the complete rendered results set on
+ *   $view->style_plugin->rendered_fields
+ */
+function views_aggregator_execute_view_without_pager($view_with_pager, $display_id = NULL) {
+  // This call exports the Views configuration, without any results attached.
+  // We're doing it this way, because none of the below work after clone_view().
+  // $view_without_pager->display['default']->handler->options['pager']['type'] = 'none';
+  // $view_without_pager->display[$display_id]->handler->options['pager']['type'] = 'none';
+  // $view_without_pager->display_handler->default_display->options['pager']['type'] = 'none';
+  // The code below is based on view::copy()
+  $code = $view_with_pager->export();
+  $code_without_pagers = str_replace(
+    "display_options['pager']['type'] = ",
+    "display_options['pager']['type'] = 'none'; //", $code, $num_pagers);
+
+  // This statement creates a View object by the name of $view.
+  eval($code_without_pagers);
+  // Avoid recursion in views_aggregator_plugin_style_table::pre_render().
+  $view->is_temp_views_aggregator = TRUE;
+  // Sneaky way to avoid caching is to set live_preview. However this also
+  // switches on query trail. As this is a copy, keep caching same as original.
+  //$view->live_preview = TRUE;
+
+  // Execute the display and render it.
+  $view->render($display_id);
+  return $view;
 }

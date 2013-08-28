@@ -7,7 +7,8 @@ module comes in. Unlike Views and ViewsCalc, this module:
 o enumerates group members (see https://drupal.org/node/1300900)
 o produces tallies (textual histograms, see http://drupal.org/node/1256716)
 o can aggregate on ViewsPHP code-snippets
-o can filter rows on regular expressions (regexp)
+o can filter out rows on regular expressions (regexp)
+o can aggregate across entire columns (e.g show column data range at the top)
 o lets you add your own custom aggregation functions to the existing set
 o aggregation functions can take parameters, as currently employed by "Filter
   rows", "Count" and "Label".

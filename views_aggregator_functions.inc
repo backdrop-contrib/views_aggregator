@@ -58,6 +58,10 @@ function views_aggregator_views_aggregation_functions_info() {
       'group' => t('Minimum'),
       'column' => t('Minimum'),
     ),
+    'views_aggregator_range' => array(
+      'group' => t('Range'),
+      'column' => t('Range'),
+    ),
     'views_aggregator_sum' => array(
       'group' => t('Sum'),
       'column' => t('Sum'),
@@ -65,6 +69,11 @@ function views_aggregator_views_aggregation_functions_info() {
     'views_aggregator_tally' => array(
       'group' => t('Tally members'),
       'column' => NULL,
+    ),
+    // This one is probably best last, because of token replacement.
+    'views_aggregator_expression' => array(
+      'group' => NULL,
+      'column' => t('Math expression *'),
     ),
   );
   return $functions;
@@ -79,7 +88,7 @@ function views_aggregator_views_aggregation_functions_info() {
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to count groups members in
- * @parm string $regexp
+ * @param string regexp
  *   if empty all result rows are kept
  *
  * @return array
@@ -112,9 +121,9 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
  * Its parameters and return value are different from the other aggregation
  * functions.
  *
- * @param object $view_results
+ * @param object view_results
  *   the result rows as they appear on the view object
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to group rows on
  *
  * @return array
@@ -130,7 +139,7 @@ function views_aggregator_group_and_compress($view_results, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as the minimum amongst its members.
+ * Aggregates a field group as the average amongst its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
@@ -143,29 +152,37 @@ function views_aggregator_group_and_compress($view_results, $field_handler) {
 function views_aggregator_average($groups, $field_handler) {
   $values = array();
   $sum_column = 0.0;
-  $count_all_rows = 0;
+  $count_column = 0;
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
+    $count = 0;
     foreach ($rows as $num => $row) {
-      $sum += views_aggregator_get_cell($field_handler, $num, FALSE);
+      $cell = views_aggregator_get_cell($field_handler, $num, FALSE);
+      // Do not count empty or non-numeric cells.
+      if (is_numeric($cell)) {
+        $sum += $cell;
+        $count++;
+      }
     }
-    $values[$group] = $sum / count($rows);
+    $values[$group] = $sum / $count;
     $sum_column += $sum;
-    $count_all_rows += count($rows);
+    $count_column += $count;
   }
-  $values['column'] = $sum_column / $count_all_rows;
+  $values['column'] = $sum_column / $count_column;
   return $values;
 }
 
 /**
- * Aggregates a group of result rows as a count of the number of group members.
+ * Aggregates a field group as a count of the number of group members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to count groups members in
- * @parm string $value
- *   an optional value to count, if omitted all group values count
+ * @param string group_regexp
+ *   an optional regexp to count, if omitted all non-empty group values count
+ * @param string column_regexp
+ *   an optional regexp to count, if omitted all non-empty group values count
  *
  * @return array
  *   an array of column values, one for each group and one for the column
@@ -179,16 +196,11 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
     $regexp = "/$regexp/";
   }
   foreach ($groups as $group => $rows) {
-    if (empty($regexp)) {
-      $count = count($rows);
-    }
-    else {
-      $count = 0;
-      foreach ($rows as $num => $row) {
-        $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
-        if (preg_match($regexp, $cell)) {
-          $count++;
-        }
+    $count = 0;
+    foreach ($rows as $num => $row) {
+      $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
+      if (isset($cell) && $cell != '' && (empty($regexp) || preg_match($regexp, $cell))) {
+        $count++;
       }
     }
     $values[$group] = $count;
@@ -199,11 +211,11 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
 }
 
 /**
- * Aggregates a group of result rows as the enumeration of its members.
+ * Aggregates a field group as the enumeration of its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array
@@ -231,11 +243,52 @@ function views_aggregator_enumerate($groups, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as the first member of the group.
+ * Aggregates a field in the column aggregation row as a math. expression.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
+ *   the handler for the view column to evaluate the expression for
+ * @param string group_exp
+ *   currently not supported
+ * @param string column_exp
+ *   an optional regexp to count, if omitted all non-empty group values count
+ *
+ * @return array
+ *   an array of column values, one for each group and one for the column
+ */
+function views_aggregator_expression($groups, $field_handler, $group_exp = NULL, $column_exp = NULL) {
+  $values = array();
+
+  ctools_include('math-expr');
+
+  // This is meaningful only if some other column aggregation function took
+  // place before this one.
+  $this_item = array('raw' => array('value' => $field_handler->last_render));
+
+  // Based on views_handler_field_math::render()
+  $tokens = array_map('floatval', $field_handler->get_render_tokens($this_item));
+  $value = strtr($column_exp, $tokens);
+  $expressions = explode(';', $value);
+  $math = new ctools_math_expr;
+  foreach ($expressions as $expression) {
+    if ($expression !== '') {
+      $value = $math->evaluate($expression);
+    }
+  }
+  //if (!empty($this->options['set_precision'])) {
+  //  $value = number_format($value, $this->options['precision'], $this->options['decimal'], $this->options['separator']);
+  //}
+  $values['column'] = $value;
+  return $values;
+}
+
+/**
+ * Aggregates a field group as the first member of the group.
+ *
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object field_handler
  *   the handler for the view column to find the first group member in
  *
  * @return array
@@ -247,11 +300,11 @@ function views_aggregator_first($groups, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as the maximum across its members.
+ * Aggregates a field group as the maximum across its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to find the maximum groups member in
  *
  * @return array
@@ -267,7 +320,7 @@ function views_aggregator_maximum($groups, $field_handler) {
         $maximum = $value;
         $is_first = FALSE;
       }
-      elseif ($value > $maximum) {
+      elseif (isset($value) && $value > $maximum) {
         $maximum = $value;
       }
     };
@@ -281,11 +334,11 @@ function views_aggregator_maximum($groups, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as the minimum across its members.
+ * Aggregates a field group as the minimum across its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to find the minimum groups member in
  *
  * @return array
@@ -301,7 +354,7 @@ function views_aggregator_minimum($groups, $field_handler) {
         $minimum = $value;
         $is_first = FALSE;
       }
-      elseif ($value < $minimum) {
+      elseif (isset($value) && $value < $minimum) {
         $minimum = $value;
       }
     };
@@ -315,15 +368,55 @@ function views_aggregator_minimum($groups, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as a word, phrase or number.
+ * Aggregates a field group as a range. Example: 5.5 - 14.9
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column
- * @param string $replace_text
+ *
+ * @return array
+ *   an array of column values, one for each group and one for the 'column'
+ */
+function views_aggregator_range($groups, $field_handler) {
+  $values = array();
+  foreach ($groups as $group => $rows) {
+    $is_first = TRUE;
+    foreach ($rows as $num => $row) {
+      $value = views_aggregator_get_cell($field_handler, $num, FALSE);
+      if ($is_first) {
+        $minimum = $maximum = $value;
+        $is_first = FALSE;
+      }
+      elseif (isset($value) && $value < $minimum) {
+        $minimum = $value;
+      }
+      elseif (isset($value) && $value > $maximum) {
+        $maximum = $value;
+      }
+    };
+    $values[$group] = ($minimum == $maximum) ? $minimum : "$minimum - $maximum";
+    if (!isset($minimum_column) || $minimum < $minimum_column) {
+      $minimum_column = $minimum;
+    }
+    if (!isset($maximum_column) || $maximum > $maximum_column) {
+      $maximum_column = $maximum;
+    }
+  }
+  $values['column'] = ($minimum_column == $maximum_column) ? $minimum_column : "$minimum_column - $maximum_column";
+  return $values;
+}
+
+/**
+ * Aggregates a field group as a word, phrase or number.
+ *
+ * @param array groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object field_handler
+ *   the handler for the view column
+ * @param string replace_text
  *   an optional parameter, specifying the replacement text to use
- * @param string $column_label
+ * @param string column_label
  *   an optional parameter, specifying a label placed the bottom of the column
  *
  * @return array
@@ -349,11 +442,11 @@ function views_aggregator_replace($groups, $field_handler, $replace_text = NULL,
 }
 
 /**
- * Aggregates a group of result rows as a sum.
+ * Aggregates a field group as the sum of its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to sum groups in
  *
  * @return array
@@ -375,11 +468,11 @@ function views_aggregator_sum($groups, $field_handler) {
 }
 
 /**
- * Aggregates a group of result rows as the tally of its members.
+ * Aggregates a field group as the tally of its members.
  *
  * @param array groups
  *   an array of groups of rows, each group indexed by group value
- * @param object $field_handler
+ * @param object field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array

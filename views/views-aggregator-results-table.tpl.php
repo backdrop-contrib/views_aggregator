@@ -5,7 +5,7 @@
  * 
  * Template to display views results after aggregation as a table.
  *
- * This templace is near-identical to that in the Views module:
+ * This template is based on the one in the Views module:
  * views/themes/views-view-table.tpl.php
  *
  * - $title : The title of this group of rows. May be empty.
@@ -20,6 +20,7 @@
  *   $rows are keyed by row number, fields within rows are keyed by field ID.
  * - $field_classes: An array of classes to apply to each field, indexed by
  *   field id, then row number. This matches the index in $rows.
+ * - $totals_row_position: whether to show the totals row at top, bottom or both
  * @ingroup views_templates
  */
 ?>
@@ -27,17 +28,29 @@
   <?php if (!empty($title) || !empty($caption)) : ?>
     <caption><?php print $caption . $title; ?></caption>
   <?php endif; ?>
-  <?php if (!empty($header)) : ?>
     <thead>
-      <tr>
-        <?php foreach ($header as $field => $label): ?>
-          <th <?php if ($header_classes[$field]): ?>class="<?php print $header_classes[$field]; ?>"<?php endif ?>>
-            <?php print $label; ?>
-          </th>
-        <?php endforeach ?>
-      </tr>
+      <?php if (!empty($header)) : ?>
+        <tr>
+          <?php foreach ($header as $field => $label): ?>
+            <th <?php if ($header_classes[$field]): ?>class="<?php print $header_classes[$field]; ?>"<?php endif ?>>
+              <?php print $label; ?>
+            </th>
+          <?php endforeach ?>
+        </tr>
+      <?php endif ?>
+      <?php if (($totals_row_position & 1) && !empty($totals)) : ?>
+        <tr>
+          <?php
+            // Use order of the row fields to output the totals likewise.
+            foreach (array_keys(reset($rows)) as $field):
+          ?>
+            <th <?php if (!empty($field_classes[$field])): ?>class="<?php print reset($field_classes[$field]); ?>"<?php endif ?>>
+              <?php print isset($totals[$field]) ? $totals[$field] : ''; ?>
+            </th>
+          <?php endforeach ?>
+        </tr>
+      <?php endif; ?>
     </thead>
-  <?php endif; ?>
   <tbody>
     <?php foreach ($rows as $r => $row): ?>
       <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"<?php endif ?>>
@@ -50,15 +63,15 @@
       </tr>
     <?php endforeach ?>
   </tbody>
-  <?php if (!empty($footer)) : ?>
+  <?php if (($totals_row_position & 2) && !empty($totals)) : ?>
     <tfoot>
       <tr>
         <?php
-          // Use order of the row fields to output the footer fields likewise.
+          // Use order of the row fields to output the totals likewise.
           foreach (array_keys(reset($rows)) as $field):
         ?>
           <th <?php if (!empty($field_classes[$field])): ?>class="<?php print reset($field_classes[$field]); ?>"<?php endif ?>>
-            <?php print isset($footer[$field]) ? $footer[$field] : ''; ?>
+            <?php print isset($totals[$field]) ? $totals[$field] : ''; ?>
           </th>
         <?php endforeach ?>
       </tr>
