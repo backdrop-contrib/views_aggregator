@@ -304,14 +304,19 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // Make a list of the group and column functions to call for this field.
       if (!empty($options['has_aggr'])) {
         foreach ($options['aggr'] as $function) {
-          if ($function != 'views_aggregator_row_filter' && $function != 'views_aggregator_group_and_compress' && !in_array($function, $functions[$field_name])) {
-            $functions[$field_name][] = $function;
+          if ($function != 'views_aggregator_row_filter' && $function != 'views_aggregator_group_and_compress') {
+            if (empty($functions[$field_name]) || !in_array($function, $functions[$field_name])) {
+              $functions[$field_name][] = $function;
+            }
           }
         }
       }
       // Column aggregation function, if requested, is last.
-      if (!empty($options['has_aggr_column']) && !in_array($options['aggr_column'], $functions[$field_name])) {
-        $functions[$field_name][] = $options['aggr_column'];
+      if (!empty($options['has_aggr_column'])) {
+        $function = $options['aggr_column'];
+        if (empty($functions[$field_name]) || !in_array($function, $functions[$field_name])) {
+          $functions[$field_name][] = $function;
+        }
       }
     }
     return $functions;
