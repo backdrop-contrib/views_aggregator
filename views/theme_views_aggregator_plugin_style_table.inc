@@ -17,7 +17,6 @@ function theme_views_aggregator_plugin_style_table($variables) {
   $output = drupal_render($form['description_markup']);
 
   // Note these are currently in the Views Calc rather than Views table order.
-  // "Hide Empty Column" is missing.
   $header = array(
     t('Field'),
     t('Align'),
@@ -35,6 +34,10 @@ function theme_views_aggregator_plugin_style_table($variables) {
     ),
     array(
       'data' => t('Default order'),
+      'align' => 'center',
+    ),
+    array(
+      'data' => t('Hide empty column'),
       'align' => 'center',
     ),
   );
@@ -73,8 +76,10 @@ function theme_views_aggregator_plugin_style_table($variables) {
       $row[] = '';
       $row[] = '';
     }
-    // Remove the option to hide empty columns.
-    unset($form['info'][$id]['empty_column']);
+    $row[] = array(
+      'data' => drupal_render($form['info'][$id]['empty_column']),
+      'align' => 'center',
+    );
     $rows[] = $row;
   }
   // Add the special 'None' row.
@@ -90,6 +95,7 @@ function theme_views_aggregator_plugin_style_table($variables) {
       'align' => 'center',
       'data' => drupal_render($form['default'][-1]),
     ),
+    '',
     '',
   );
   $output .= theme('table', array('header' => $header, 'rows' => $rows));

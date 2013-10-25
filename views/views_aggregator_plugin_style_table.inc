@@ -44,8 +44,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
     $columns = $this->sanitize_columns($this->options['columns']);
     foreach ($columns as $field => $column) {
-      $safe = str_replace(array('][', '_', ' '), '-', $field);
-
       $form['info'][$field]['has_aggr'] = array(
         '#type' => 'checkbox',
         '#title' => t('Apply group function'),
