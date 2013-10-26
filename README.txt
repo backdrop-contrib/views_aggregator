@@ -68,7 +68,7 @@ each event whether it is in progress, closed or not started yet.
 <?php
   $start_date = strtotime($data->field_field_duration[0]['raw']['value']);
   $end_date   = strtotime($data->field_field_duration[0]['raw']['value2']);
-  echo time () < $start_date ? 'not started' : (time() < $end_date ? 'in progress' : 'closed');
+  echo time() < $start_date ? 'not started' : (time() < $end_date ? 'in progress' : 'closed');
 ?>
 
 Next you can use VAgg+ to group on the expression and count or enumerate the

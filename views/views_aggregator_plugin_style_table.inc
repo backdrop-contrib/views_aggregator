@@ -85,8 +85,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
               'checked' => TRUE,
             ),
             'select[name="style_options[info][' . $field . '][aggr]"' => array(
-              // 'value' => array('views_aggregator_replace') Can't get this to work
-            )
+              // 'value' => array('views_aggregator_replace') NOT WORKING
+            ),
           ),
         ),
       );
@@ -120,8 +120,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
             'input[name="style_options[info][' . $field . '][has_aggr_column]"]' => array(
               'checked' => TRUE,
             ),
-            //'select[name="style_options[info][' . $field . '][aggr_column]"' => array(
-            //)
           ),
         ),
       );
@@ -236,10 +234,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $this->set_aggregated_group_values($groups, $values);
     if (empty($this->view->totals)) {
       // Write the column aggregation result row on the View. This row will be
-      // rendered to HTML via template_preprocess_views_aggregator_results_table()
+      // rendered via template_preprocess_views_aggregator_results_table().
       $this->view->totals = $this->set_totals_row($values);
     }
-    // entity_get_controller('node')->resetCache();
 
     // With the aggregation functions now complete, destroy rows not part of the
     // aggregation.
@@ -251,7 +248,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       foreach ($this->view->result as $num => $row) {
         $this->view->result[$num]->num = $num;
       }
-      uasort($this->view->result, array($this, '_compare_result_rows'));
+      uasort($this->view->result, array($this, 'compare_result_rows'));
     }
   }
 
@@ -324,7 +321,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Executes the supplied aggregation functions with the groups as arguments.
    *
    * @param array $groups
-   *
    * @param array $functions
    *
    * @return array of function return values
@@ -582,16 +578,16 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   /**
    * Compare function for aggregated groups, for use in sorting functions.
    *
-   * @param array $group1
+   * @param array $row1
    *   The first aggregated group of result rows.
-   * @param array $group2
+   * @param array $ro22
    *   The second aggregated group of result rows.
    *
    * @return int, -1, 0, 1
-   *   The compare code indicating whether $group1 is smaller than, equal to or
-   *   greater than $group2.
+   *   The compare code indicating whether $row2 is smaller than, equal to or
+   *   greater than $row2.
    */
-  private function _compare_result_rows($row1, $row2) {
+  protected function compare_result_rows($row1, $row2) {
     // Columns that need to be sorted using raw values:
     // o numbers and moneys, so that "$1,000" comes AFTER "$9.99"
     // o dates and date ranges

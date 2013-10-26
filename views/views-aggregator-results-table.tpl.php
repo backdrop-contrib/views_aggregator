@@ -1,8 +1,6 @@
 <?php
-
 /**
  * @file views-aggregator-results-table.tpl.php
- * 
  * Template to display views results after aggregation as a table.
  *
  * This template is based on the one in the Views module:

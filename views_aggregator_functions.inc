@@ -11,10 +11,6 @@
 
 /**
  * Implements hook_views_aggregation_functions_info().
- *
- * @return array
- *   array of available aggregation function names with descriptions to display
- *   in the Views UI
  */
 function views_aggregator_views_aggregation_functions_info() {
   $functions = array(
@@ -36,7 +32,7 @@ function views_aggregator_views_aggregation_functions_info() {
     ),
     'views_aggregator_count' => array(
       'group' => t('Count (having regexp) *'),
-      'column' => t('Count (having regexp) *')
+      'column' => t('Count (having regexp) *'),
     ),
     'views_aggregator_first' => array(
       'group' => t('Display first member'),
@@ -84,11 +80,11 @@ function views_aggregator_views_aggregation_functions_info() {
  *
  * Matching takes place on the raw values (1000, rather than "$ 1,000").
  *
- * @param array groups
+ * @param object $views_plugin_style
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to count groups members in
- * @param string regexp
+ * @param string $regexp
  *   if empty all result rows are kept
  *
  * @return array
@@ -105,11 +101,8 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
   foreach ($views_plugin_style->view->result as $num => $row) {
     $field_value = views_aggregator_get_cell($field_handler, $num, FALSE);
     if (!preg_match($regexp, $field_value)) {
-      //$field_value = views_aggregator_get_cell($field_handler, $num, TRUE);
-      //if (!preg_match($regexp, $field_value)) {
       unset($views_plugin_style->rendered_fields[$num]);
       unset($views_plugin_style->view->result[$num]);
-      //}
     }
   }
 }
@@ -121,9 +114,9 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
  * Its parameters and return value are different from the other aggregation
  * functions.
  *
- * @param object view_results
+ * @param object $view_results
  *   the result rows as they appear on the view object
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to group rows on
  *
  * @return array
@@ -141,7 +134,7 @@ function views_aggregator_group_and_compress($view_results, $field_handler) {
 /**
  * Aggregates a field group as the average amongst its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the minimum in
@@ -175,13 +168,13 @@ function views_aggregator_average($groups, $field_handler) {
 /**
  * Aggregates a field group as a count of the number of group members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to count groups members in
- * @param string group_regexp
+ * @param string $group_regexp
  *   an optional regexp to count, if omitted all non-empty group values count
- * @param string column_regexp
+ * @param string $column_regexp
  *   an optional regexp to count, if omitted all non-empty group values count
  *
  * @return array
@@ -213,9 +206,9 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
 /**
  * Aggregates a field group as the enumeration of its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array
@@ -245,13 +238,13 @@ function views_aggregator_enumerate($groups, $field_handler) {
 /**
  * Aggregates a field in the column aggregation row as a math. expression.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to evaluate the expression for
- * @param string group_exp
+ * @param string $group_exp
  *   currently not supported
- * @param string column_exp
+ * @param string $column_exp
  *   an optional regexp to count, if omitted all non-empty group values count
  *
  * @return array
@@ -276,9 +269,9 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
       $value = $math->evaluate($expression);
     }
   }
-  //if (!empty($this->options['set_precision'])) {
-  //  $value = number_format($value, $this->options['precision'], $this->options['decimal'], $this->options['separator']);
-  //}
+  // if (!empty($this->options['set_precision'])) {
+  //   $value = number_format($value, $this->options['precision'], $this->options['decimal'], $this->options['separator']);
+  // }
   $values['column'] = $value;
   return $values;
 }
@@ -286,9 +279,9 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
 /**
  * Aggregates a field group as the first member of the group.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to find the first group member in
  *
  * @return array
@@ -302,9 +295,9 @@ function views_aggregator_first($groups, $field_handler) {
 /**
  * Aggregates a field group as the maximum across its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to find the maximum groups member in
  *
  * @return array
@@ -336,9 +329,9 @@ function views_aggregator_maximum($groups, $field_handler) {
 /**
  * Aggregates a field group as the minimum across its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to find the minimum groups member in
  *
  * @return array
@@ -370,9 +363,9 @@ function views_aggregator_minimum($groups, $field_handler) {
 /**
  * Aggregates a field group as a range. Example: 5.5 - 14.9
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column
  *
  * @return array
@@ -410,13 +403,13 @@ function views_aggregator_range($groups, $field_handler) {
 /**
  * Aggregates a field group as a word, phrase or number.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column
- * @param string replace_text
+ * @param string $replace_text
  *   an optional parameter, specifying the replacement text to use
- * @param string column_label
+ * @param string $column_label
  *   an optional parameter, specifying a label placed the bottom of the column
  *
  * @return array
@@ -444,9 +437,9 @@ function views_aggregator_replace($groups, $field_handler, $replace_text = NULL,
 /**
  * Aggregates a field group as the sum of its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to sum groups in
  *
  * @return array
@@ -470,9 +463,9 @@ function views_aggregator_sum($groups, $field_handler) {
 /**
  * Aggregates a field group as the tally of its members.
  *
- * @param array groups
+ * @param array $groups
  *   an array of groups of rows, each group indexed by group value
- * @param object field_handler
+ * @param object $field_handler
  *   the handler for the view column to find members of the group
  *
  * @return array

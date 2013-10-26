@@ -1,5 +1,4 @@
- <?php
-
+<?php
 /**
  * @file
  * theme_views_aggregator_plugin_style_table.inc

@@ -6,7 +6,7 @@
  * Module implementig post-query aggregation functions for Views tables.
  */
 
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'views_aggregator') . '/views_aggregator_functions.inc';
+module_load_include('inc', 'views_aggregator', 'views_aggregator_functions');
 
 /**
  * Implements hook_help().
@@ -30,7 +30,7 @@ function views_aggregator_theme() {
     'views_aggregator_plugin_style_table' => array(
       // Pass $form to theme_views_aggregator_plugin_style_table($vars)
       'render element' => 'form',
-      'path' =>  $base_path . '/views',
+      'path' => $base_path . '/views',
       'file' => 'theme_views_aggregator_plugin_style_table.inc',
     ),
   );
@@ -50,7 +50,7 @@ function views_aggregator_views_api() {
 /**
  * Get all avaialble aggregation function definitions.
  *
- * @param string name
+ * @param string $name
  *   The name of the desired function or NULL to retrieve an array of functions.
  *
  * @return array
@@ -69,7 +69,7 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
     // hook_views_aggregation_functions_alter().
     drupal_alter('views_aggregation_functions_info', $aggregation_functions);
   }
-  //$aggregation_functions = (array)$aggregation_functions;
+  // $aggregation_functions = (array)$aggregation_functions;
   if (empty($name)) {
     return $aggregation_functions;
   }
@@ -83,14 +83,13 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
  *
  * @param object $field_handler
  *   The handler associated with the table column being requested.
- *
  * @param int $row_num
  *   index into the View result rows array
- *
  * @param bool $rendered
  *   Whether to return the rendered as opposed to the raw value of the cell
  *
  * @return string
+ *   The content of the cell
  */
 function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) {
   return $field_handler->view->style_plugin->get_cell($field_handler, $row_num, $rendered);
@@ -106,7 +105,7 @@ function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) 
  *
  * @param object $views_field_handler
  *   The views_handler_field_field object belonging to the View result field
- * @param $row_num
+ * @param int $row_num
  *   The view result row number to change. Pass NULL to simply render $raw_value
  *   outside the context of a View, without affecting any rows.
  * @param mixed $raw_value
@@ -145,7 +144,7 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
         if ($name != 'value' && !($name == 'tid' && is_numeric($raw_value))) {
           return isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : $value);
         }
-        // tid may be set in case of min, max, most frequent etc.
+        // The tid may be set in case of min, max, most frequent etc.
         $entity->{$field_name}[$lang][0][$name] = $raw_value;
       }
     }
@@ -154,7 +153,9 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
       // placing both the 'raw' and 'rendered' versions in field_...[].
       $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
       // The final step is to theme the rendered values.
-      return $views_field_handler->theme($row); // alt: $views_field_handler->advanced_render($row);
+      // An alternative for the line below is:
+      // return $views_field_handler->advanced_render($row);
+      return $views_field_handler->theme($row);
     }
   }
   $display = array(
@@ -196,7 +197,6 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
   // pre_render().
   // The order of the rendered rows is determined by $view->result, while the
   // content of each row comes from $view->style_plugin->rendered_fields.
-
   $vars['attributes_array']['id'] = drupal_html_id('views_aggregator_datatable');
   if (module_exists('datatables_alt')) {
     template_preprocess_datatables_alt_view($vars);
@@ -240,7 +240,7 @@ function views_aggregator_execute_view_without_pager($view_with_pager, $display_
   $view->is_temp_views_aggregator = TRUE;
   // Sneaky way to avoid caching is to set live_preview. However this also
   // switches on query trail. As this is a copy, keep caching same as original.
-  //$view->live_preview = TRUE;
+  // $view->live_preview = TRUE;
 
   // Execute the display and render it.
   $view->render($display_id);
