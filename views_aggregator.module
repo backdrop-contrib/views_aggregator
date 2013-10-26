@@ -241,7 +241,6 @@ function views_aggregator_execute_view_without_pager($view_with_pager, $display_
   // Sneaky way to avoid caching is to set live_preview. However this also
   // switches on query trail. As this is a copy, keep caching same as original.
   // $view->live_preview = TRUE;
-
   // Execute the display and render it.
   $view->render($display_id);
   return $view;

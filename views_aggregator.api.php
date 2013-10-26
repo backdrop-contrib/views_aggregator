@@ -13,7 +13,8 @@
 /**
  * Define your own group and column aggregation functions.
  *
- * @return array aggregation display names indexed by associated function id.
+ * @return array
+ *   aggregation display names indexed by associated function id.
  */
 function hook_views_aggregation_functions_info() {
   $functions = array(
@@ -29,6 +30,7 @@ function hook_views_aggregation_functions_info() {
  * Alter existing aggregation functions.
  *
  * @param array $aggregation_functions
+ *   the aggregation functions currently defined
  */
 function hook_views_aggregation_funcionts_info_alter($aggregation_functions) {
 }

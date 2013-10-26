@@ -263,15 +263,13 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
   $tokens = array_map('floatval', $field_handler->get_render_tokens($this_item));
   $value = strtr($column_exp, $tokens);
   $expressions = explode(';', $value);
-  $math = new ctools_math_expr;
+  $math = new ctools_math_expr();
   foreach ($expressions as $expression) {
     if ($expression !== '') {
       $value = $math->evaluate($expression);
     }
   }
-  // if (!empty($this->options['set_precision'])) {
-  //   $value = number_format($value, $this->options['precision'], $this->options['decimal'], $this->options['separator']);
-  // }
+  // Should we call number_format($value, $precision, $decimal, $separator)
   $values['column'] = $value;
   return $values;
 }
@@ -361,7 +359,7 @@ function views_aggregator_minimum($groups, $field_handler) {
 }
 
 /**
- * Aggregates a field group as a range. Example: 5.5 - 14.9
+ * Aggregates a field group as a range. Example: 5.5 - 14.9.
  *
  * @param array $groups
  *   an array of groups of rows, each group indexed by group value

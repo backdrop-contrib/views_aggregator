@@ -182,6 +182,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   /*
    * Overrides pre_render().
    *
+   * @param array $results
+   *   the results returned from the database query
+   *
    * Note that this class being a views_plugin, rather than a views_handler,
    * it does not have a post_execute() function.
    *
@@ -267,7 +270,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   /**
    * Aggregate and compress the View's rows into groups.
    *
-   * @return array groups
+   * @return array
+   *   an array of aggregated groups
    */
   protected function aggregate_groups() {
     $field_handlers = $this->view->field;
@@ -402,6 +406,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   The result row.
    *
    * @return string
+   *   the raw contents of the cell
    */
   protected function get_cell_raw($field_handler, $result_row, $compressed = TRUE) {
     $value = $field_handler->get_value($result_row);
@@ -412,8 +417,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     // get_value($result_row) may produce values like $value[0]['tid'] == 37
     // or may have multiple subvalues like AddressFields:
-    //   $value[0]['country'] == 'AU'
-    //   $value[0]['postal_code'] = '3040' etc.
+    // $value[0]['country'] == 'AU'
+    // $value[0]['postal_code'] = '3040' etc.
     //
     if (!$compressed) {
       return $value;
@@ -444,14 +449,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   however sorting, may not work.
    *   Node properties (e.g., title) and PHP expression values can always be
    *   set successfully.
-   *
-   * @param object $field_handler
-   * @param int $row_num
-   * @param string|int|float $new_value
-   *
-   * @return mixed
-   *   The value set, or FALSE if it couldn't be set on the results (it can
-   *   and will always be set on the rendered_fields).
    */
   protected function set_cell($field_handler, $row_num, $new_value) {
     $field_alias = $field_handler->field_alias;
@@ -511,7 +508,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * @param array $values
    *   an array of field value arrays, indexed by field name and 'colomn'
    */
-  private function set_totals_row($values) {
+  protected function set_totals_row($values) {
     $totals = array();
     $dont_render_functions = array('views_aggregator_count', 'views_aggregator_range');
     foreach ($values as $field_name => $group) {
@@ -580,12 +577,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * @param array $row1
    *   The first aggregated group of result rows.
-   * @param array $ro22
+   * @param array $row2
    *   The second aggregated group of result rows.
    *
-   * @return int, -1, 0, 1
-   *   The compare code indicating whether $row2 is smaller than, equal to or
-   *   greater than $row2.
+   * @return int
+   *   The compare code indicating whether $row2 is smaller than (-1), equal
+   *   to (0) or greater than (1) $row2.
    */
   protected function compare_result_rows($row1, $row2) {
     // Columns that need to be sorted using raw values:
@@ -594,7 +591,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     //
     // Columns that need to be sorted using rendered, post-aggregated values,
     // o everything else, e.g hyper-linked titles, taxonomy terms, enumerations
-    //   and tallies: but after the HTML has been stripped out
+    // and tallies: but after the HTML has been stripped out
     $field_handler = $this->view->field[$this->active];
     $cell1 = $this->get_cell_raw($field_handler, $row1, FALSE);
     $compare_rendered = isset($cell1[0]['tid']);
