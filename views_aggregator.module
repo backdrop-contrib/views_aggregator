@@ -139,7 +139,7 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
     if (is_array($raw_value)) {
       $entity->{$field_name}[$lang][0] = $raw_value;
     }
-    else {
+    elseif (!empty($entity->{$field_name}[$lang][0])) {
       foreach ($entity->{$field_name}[$lang][0] as $name => $value) {
         if ($name != 'value' && !($name == 'tid' && is_numeric($raw_value))) {
           return isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : $value);
