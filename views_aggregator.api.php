@@ -32,7 +32,7 @@ function hook_views_aggregation_functions_info() {
  * @param array $aggregation_functions
  *   the aggregation functions currently defined
  */
-function hook_views_aggregation_funcionts_info_alter($aggregation_functions) {
+function hook_views_aggregation_functions_info_alter($aggregation_functions) {
 }
 
 /**
