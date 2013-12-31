@@ -374,7 +374,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   }
 
   /**
-   * Returns the rendered result at the intersection of column and row.
+   * Returns the raw or rendered result at the intersection of column and row.
    *
    * @param object $field_handler
    *   The handler associated with the result column being requested.
@@ -388,12 +388,16 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
+    // Bit of a hack for "Global: Math expression" field. Pick up rendered
+    // fields as it seems that's all we can get!
+    $render |= ($field_handler->definition['handler'] == 'views_handler_field_math');
     if ($render && isset($this->rendered_fields[$row_num][$field_name])) {
       return $this->rendered_fields[$row_num][$field_name];
     }
     if (!isset($field_handler->view->result[$row_num])) {
       return '';
     }
+    //$field_handler->view->row_index = $row_num;
     return $this->get_cell_raw($field_handler, $field_handler->view->result[$row_num]);
   }
 
@@ -402,8 +406,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * @param object $field_handler
    *   The handler associated with the result column being requested.
-   * @param object $row_num
+   * @param object $result_row
    *   The result row.
+   * @param bool $compressed
+   *   If the result is a (nested) array, return the first primitive value.
    *
    * @return string
    *   the raw contents of the cell
