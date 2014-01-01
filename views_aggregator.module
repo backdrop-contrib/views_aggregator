@@ -233,10 +233,10 @@ function views_aggregator_execute_view_without_pager($view_with_pager, $display_
   eval($code_without_pagers);
   // Avoid recursion in views_aggregator_plugin_style_table::pre_render().
   $view->is_temp_views_aggregator = TRUE;
-  // Sneaky way to avoid caching is to set live_preview. 
+  // Sneaky way to avoid caching is to set live_preview:
   // $view->live_preview = TRUE;
-  // However this also switches on query trail. As this is a copy, keep caching
-  // same as original.
+  // However this also switches on query trail. As this is a copy, let's keep
+  // caching behaviour the same as the original.
   // Execute the display and render it.
   $view->render($display_id);
   return $view;

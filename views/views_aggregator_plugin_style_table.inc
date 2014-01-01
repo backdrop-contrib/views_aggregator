@@ -211,7 +211,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // First apply the row filters (if any), then aggregate the columns.
       $view_without_pager->style_plugin->apply_row_filters();
       // Only interested in column aggregation, so only 'column' group needed.
-      $column_group = array();
+      $column_group = array('column' => array());
       foreach ($view_without_pager->result as $num => $row) {
         $column_group['column'][$num] = $row;
       }
@@ -233,11 +233,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
     unset($groups['column']);
 
-    // Write group aggregation results into the results.
+    // Write group aggregation results into the View results.
     $this->set_aggregated_group_values($groups, $values);
     if (empty($this->view->totals)) {
-      // Write the column aggregation result row on the View. This row will be
-      // rendered via template_preprocess_views_aggregator_results_table().
+      // If not already set above, write the column aggregation result row on
+      // the View object. This row will be rendered via
+      // template_preprocess_views_aggregator_results_table().
       $this->view->totals = $this->set_totals_row($values);
     }
 
@@ -397,7 +398,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     if (!isset($field_handler->view->result[$row_num])) {
       return '';
     }
-    //$field_handler->view->row_index = $row_num;
+    $field_handler->view->row_index = $row_num;
     return $this->get_cell_raw($field_handler, $field_handler->view->result[$row_num]);
   }
 
@@ -426,10 +427,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // $value[0]['country'] == 'AU'
     // $value[0]['postal_code'] = '3040' etc.
     //
-    if (!$compressed) {
-      return $value;
-    }
-    if (is_array($value)) {
+    if ($compressed && is_array($value)) {
       $value = reset($value);
       if (is_array($value)) {
         $value = reset($value);
@@ -518,7 +516,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $totals = array();
     $dont_render_functions = array('views_aggregator_count', 'views_aggregator_range');
     foreach ($values as $field_name => $group) {
-      if (isset($group['column'])) {
+      if (!empty($this->options['info'][$field_name]['has_aggr_column']) && isset($group['column'])) {
         if (in_array($this->options['info'][$field_name]['aggr_column'], $dont_render_functions)) {
           $totals[$field_name] = $group['column'];
         }
