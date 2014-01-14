@@ -197,6 +197,18 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
   // pre_render().
   // The order of the rendered rows is determined by $view->result, while the
   // content of each row comes from $view->style_plugin->rendered_fields.
+
+  // Loop code taken from template_preprocess_views_view_table(),
+  // file: views/theme/theme.inc
+  $options = $view->style_plugin->options;
+  $columns = $view->style_plugin->sanitize_columns($options['columns'], $view->field);
+  foreach ($columns as $field => $column) {
+    if ($field == $column) {
+      // Make all columns click-sortable, including Math Expressions.
+      $view->field[$field]->definition['click sortable'] = TRUE;
+    }
+  }
+
   $vars['attributes_array']['id'] = drupal_html_id('views_aggregator_datatable');
   template_preprocess_views_view_table($vars);
 }

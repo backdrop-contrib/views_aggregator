@@ -28,6 +28,17 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Create the tabular form with the aggregation options.
    */
   public function options_form(&$form, &$form_state) {
+    
+    $handlers = $this->display->handler->get_handlers('field');
+    $columns = $this->sanitize_columns($this->options['columns']);
+    
+    foreach ($columns as $field => $column) {
+      if ($field == $column) {
+        // Make all columns potentially sortable, including Math Expressions.
+        // Do this before parent::options_form($form, $form_state);
+        $handlers[$field]->definition['click sortable'] = TRUE;
+      }
+    }
     // Note: bulk of form is provided by superclass views_plugin_style_table.
     parent::options_form($form, $form_state);
 
@@ -42,8 +53,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       '#markup' => '<div class="description form-item">' . t('Column aggregation functions may be enabled independently of group aggregation functions. Every group aggregation function, except <em>Filter rows (by regexp)</em>, requires exactly <strong>one</strong> field to be assigned the <em>Group and compress</em> function. With that done, select any of the other aggregation functions for some or all of the fields. Functions marked with an asterisk take an optional parameter. <br/>You may combine multiple fields into the same column. If you do, the separator specified will be used to separate the fields. You may control column order and field labels in the Fields section of the main configuration page. For column aggregation <em>Math expressions</em> you may use the tokens from that same page as documented in the "Replacement patterns" in the section "Rewrite the output of this field".') . '</div>',
     );
 
-    $columns = $this->sanitize_columns($this->options['columns']);
     foreach ($columns as $field => $column) {
+
       $form['info'][$field]['has_aggr'] = array(
         '#type' => 'checkbox',
         '#title' => t('Apply group function'),
@@ -84,9 +95,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
             'input[name="style_options[info][' . $field . '][has_aggr]"]' => array(
               'checked' => TRUE,
             ),
-            'select[name="style_options[info][' . $field . '][aggr]"' => array(
-              // 'value' => array('views_aggregator_replace') NOT WORKING
-            ),
+            //'select[name="style_options[info][' . $field . '][aggr][]"]' => array(
+            // 'value' => array('views_aggregator_sum') DOES NOT WORK
+            //),
           ),
         ),
       );
@@ -123,6 +134,41 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           ),
         ),
       );
+      /*
+        // Convert the Sortable checkbox to a tri-state (radios or select)
+        $form['info'][$field]['sortable'] = array(
+          '#type' => 'select',
+          '#options' => array(
+            0 => 'No',
+            1 => 'Yes, alphabetically',
+            2 => 'Yes, numerically'
+          ),
+          '#default_value' => isset($this->options['info'][$field]['sortable']) ? $this->options['info'][$field]['sortable'] : 1,
+        );
+        // Adjust Default Sort Order to depend on 2 out of 3 states.
+        // See views_plugin_style_table.inc
+        $safe = str_replace(array('][', '_', ' '), '-', $field);
+        $id = 'edit-style-options-columns-' . $safe;
+        $form['info'][$field]['default_sort_order'] = array(
+          '#type' => 'select',
+          '#options' => array('asc' => t('Ascending'), 'desc' => t('Descending')),
+          '#default_value' => !empty($this->options['info'][$field]['default_sort_order']) ? $this->options['info'][$field]['default_sort_order'] : 'asc',
+          '#dependency_count' => 2,
+          '#dependency' => array($id => array($field), 'edit-style-options-info-' . $safe . '-sortable' => array(1, 2)),
+        );
+        // Provide an ID so we can have such things.
+        $radio_id = drupal_html_id('edit-default-' . $field);
+        $form['default'][$field] = array(
+          '#type' => 'radio',
+          '#return_value' => $field,
+          '#parents' => array('style_options', 'default'),
+          '#id' => $radio_id,
+          // Because 'radio' doesn't fully support '#id' =(
+          '#attributes' => array('id' => $radio_id),
+          '#default_value' => $default,
+          '#dependency' => array($id => array($field)),
+        );
+      */
     }
     $form['totals_per_page'] = array(
       '#title' => t('Column aggregation row applies to:'),
@@ -389,11 +435,16 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
-    // Bit of a hack for "Global: Math expression" field. Pick up rendered
-    // fields as it seems that's all we can get!
-    $render |= ($field_handler->definition['handler'] == 'views_handler_field_math');
-    if ($render && isset($this->rendered_fields[$row_num][$field_name])) {
-      return $this->rendered_fields[$row_num][$field_name];
+    if (isset($this->rendered_fields[$row_num][$field_name])) {
+      if (is_a($field_handler, 'views_handler_field_math')) {
+        // Bit of a hack for "Global: Math expression" field. Always pick up
+        // rendered fields as it seems that's all we can get! Then ignore
+        // non-numeric leading characters like currency signs.
+        return vap_num($this->rendered_fields[$row_num][$field_name]);
+      }
+      elseif ($render) {
+        return $this->rendered_fields[$row_num][$field_name];
+      }
     }
     if (!isset($field_handler->view->result[$row_num])) {
       return '';
@@ -563,15 +614,18 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     if ($this->order != 'asc' && $this->order != 'desc') {
       $this->order = 'asc';
     }
-    // Store the $sort for later use.
+    // Store the $sort and sortable flag for later use.
     $this->active = $sort;
+    //$this->sortable = $this->options['info'][$sort]['sortable'];
 
-    // Tell the field to click-sort, but only if it is not aggregated, in
-    // which case sorting will be dealt with in $this->pre_render().
+    // Tell the field to click-sort, but only if it is not a Math Expression or
+    // a field not aggregated, in which cases sorting will be dealt with in
+    // $this->pre_render().
     // This is here predominantly to avoid notices from ViewsPHP, but also
     // makes normal column sorting more efficient by not adding any unnecessary
     // WHERE-clauses.
-    if (empty($this->options['info'][$sort]['has_aggr'])) {
+    if (!is_a($this->view->field[$sort], 'views_handler_field_math') &&
+      empty($this->options['info'][$sort]['has_aggr'])) {
       $this->view->field[$sort]->click_sort($this->order);
     }
   }
@@ -589,16 +643,27 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   to (0) or greater than (1) $row2.
    */
   protected function compare_result_rows($row1, $row2) {
+    // The sorting data may be raw or rendered, while the sorting style may be
+    // alphabetical or numeric.
+    // Raw vs. rendered or alphabetical vs. numeric is determined heuristically
+    // below.
+    //
     // Columns that need to be sorted using raw values:
-    // o numbers and moneys, so that "$1,000" comes AFTER "$9.99"
+    // o numbers and moneys, so that "$1,000" comes AFTER "$9.99" (ascending)
     // o dates and date ranges
     //
-    // Columns that need to be sorted using rendered, post-aggregated values,
+    // Columns that need to be sorted using rendered, post-aggregated values:
     // o everything else, e.g hyper-linked titles, taxonomy terms, enumerations
-    // and tallies: but after the HTML has been stripped out
+    // and tallies: but after the HTML has been stripped out.
+
     $field_handler = $this->view->field[$this->active];
-    $cell1 = $this->get_cell_raw($field_handler, $row1, FALSE);
-    $compare_rendered = isset($cell1[0]['tid']);
+    if (is_a($field_handler, 'views_handler_field_math')) {
+      $compare_rendered = TRUE;
+    }
+    else {
+      $cell1 = $this->get_cell_raw($field_handler, $row1, FALSE);
+      $compare_rendered = isset($cell1[0]['tid']);
+    }
     if (!$compare_rendered) {
       $cell1 = $this->get_cell_raw($field_handler, $row1, TRUE);
       $cell2 = $this->get_cell_raw($field_handler, $row2, TRUE);
@@ -608,7 +673,14 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, TRUE));
       $cell2 = strip_tags($this->get_cell($field_handler, $row2->num, TRUE));
     }
-    $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
+    if ((double)$cell1 == (double)$cell2) {
+      // If both cells cast to zero, then compare alphabetically.
+      $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
+    }
+    else {
+      // Compare numerically.
+      $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
+    }
     return ($this->order == 'asc') ? $compare : -$compare;
   }
 

@@ -111,6 +111,10 @@ LIMITATIONS
 -----------
 o Views-style table grouping, whereby the original table is split into smaller
   ones, interferes with this plugin, so is not available.
+o When you have an aggregated View AND a normal View attachment on the same
+  page AND you click-sort on Global:Math Expression the normal View attachment
+  will temporarily disappear. This is because the sort is passed to BOTH
+  displays and normal Views do not support sorting on Math Expressions.
 o When you apply two aggregation functions on the same field, the 2nd function
   gets applied on the results of the first -- not always what you want.
 o Grouping, tallying and other functions may not work correctly when you have

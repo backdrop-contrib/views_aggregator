@@ -449,7 +449,8 @@ function views_aggregator_sum($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
     foreach ($rows as $num => $row) {
-      $sum += views_aggregator_get_cell($field_handler, $num, FALSE);
+      $cell = views_aggregator_get_cell($field_handler, $num, FALSE);
+      $sum += $cell;
     };
     $values[$group] = $sum;
     $sum_column += $sum;
@@ -471,6 +472,7 @@ function views_aggregator_sum($groups, $field_handler) {
  */
 function views_aggregator_tally($groups, $field_handler) {
   $values = array();
+  $is_new_php = version_compare(phpversion(), '5.4.0', '>=');
   foreach ($groups as $group => $rows) {
     $tally = array();
     foreach ($rows as $num => $row) {
@@ -493,7 +495,7 @@ function views_aggregator_tally($groups, $field_handler) {
       // Unfortunately this applies to the entire column.
       unset($field_handler->options['link_to_node']);
     }
-    if (version_compare(phpversion(), '5.4.0', '>=')) {
+    if ($is_new_php) {
       ksort($tally, SORT_NATURAL | SORT_FLAG_CASE);
     }
     else {
@@ -506,4 +508,20 @@ function views_aggregator_tally($groups, $field_handler) {
     $values[$group] = implode('<br/>', $rendered_tally);
   }
   return $values;
+}
+
+/**
+ * Function to extract a double from a string, auto-skipping non-numeric chars.
+ *
+ * Scientific notation, e.g. 1.23E-45, is NOT supported, it will return 1.23
+ *
+ * @param string $string
+ *
+ * @return double
+ *   Returns zero, if no number could be found in the string.
+ *
+ * @todo: allow , (thousands separator)
+ */
+function vap_num($string) {
+  return preg_match('/[-+]?\d*\.?\d+/', $string, $matches) ? (double)$matches[0] : 0.0;
 }
