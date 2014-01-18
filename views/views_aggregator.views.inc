@@ -12,7 +12,7 @@ function views_aggregator_views_plugins() {
   $base_path = drupal_get_path('module', 'views_aggregator');
   $plugins['style']['views_aggregator'] = array(
     'title' => t('Table with aggregation options'),
-    'help' => t('Creates a table for the user to define aggregation functions.'),
+    'help' => t('Creates a tabular UI for the user to define aggregation functions.'),
     'handler' => 'views_aggregator_plugin_style_table',
     // 'theme' name implies views-aggregator-results-table.tpl.php
     // and template_preprocess_views_aggregator_results_table($vars)

@@ -168,6 +168,39 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
 }
 
 /**
+ * Format a raw numeric value according to the supplied Views handler settings.
+ *
+ * @param object $views_field_handler
+ * @param double $raw_value
+ * @return string, number formatted according to Views handler settings
+ */
+function views_aggregator_format_numeric_field($views_handler, $raw_value) {
+  if (!empty($views_handler->options['set_precision'])) {
+    $value = number_format($raw_value, $views_handler->options['precision'], $views_handler->options['decimal'], $views_handler->options['separator']);
+  }
+  else {
+    $remainder = abs($raw_value) - intval(abs($raw_value));
+    $value = $raw_value > 0 ? floor($value) : ceil($value);
+    $value = number_format($value, 0, '', $views_handler->options['separator']);
+    if ($remainder) {
+      // The substr may not be locale safe.
+      $value .= $views_handler->options['decimal'] . substr($remainder, 2);
+    }
+  }
+  // Check to see if hiding should happen before adding prefix and suffix.
+  if ($views_handler->options['hide_empty'] && empty($value) && ($value !== 0 || $views_handler->options['empty_zero'])) {
+    return '';
+  }
+  // Should we format as a plural.
+  if (!empty($views_handler->options['format_plural']) && ($value != 0 || !$views_handler->options['empty_zero'])) {
+    $value = format_plural($value, $views_handler->options['format_plural_singular'], $views_handler->options['format_plural_plural']);
+  }
+
+  return $views_handler->sanitize_value($views_handler->options['prefix'] . $value . $views_handler->options['suffix']);
+}
+
+
+/**
  * Prepare to render the view results as a table style.
  *
  * The rendering to HTML happens in views-aggregator-results-table.tpl.php

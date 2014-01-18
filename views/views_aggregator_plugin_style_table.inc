@@ -517,6 +517,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $field_handler->options['php_output'] = FALSE;
       }
     }
+    elseif (is_a($field_handler, 'views_handler_field_math')) {
+      $new_value = views_aggregator_format_numeric_field($field_handler, $new_value);
+    }
     elseif (is_a($field_handler, 'views_handler_field_field')) {
       if ($rendered_value = views_aggregator_render_field($field_handler, $row_num, $new_value)) {
         $new_value = $rendered_value;
@@ -573,7 +576,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
         else {
           $field_handler = $this->view->field[$field_name];
-          $totals[$field_name] = views_aggregator_render_field($field_handler, NULL, $group['column']);
+          if (is_a($field_handler, 'views_handler_field_math')) {
+            $totals[$field_name]= views_aggregator_format_numeric_field($field_handler, $group['column']);
+          }
+          else {
+            $totals[$field_name] = views_aggregator_render_field($field_handler, NULL, $group['column']);
+          }
         }
       }
     }
