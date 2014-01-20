@@ -119,7 +119,7 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
   $field_alias = $views_field_handler->field_alias;
   $row = isset($row_num) ? $views_field_handler->view->result[$row_num] : reset($views_field_handler->view->result);
   if (!$row || empty($row->_field_data[$field_alias])) {
-    // This happens for ViewsPHP fields, for instance.
+    // This happens for ViewsPHP fields, for instance and for Math Expressions.
     return !$row || isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : '?');
   }
   $_field_data = $row->_field_data[$field_alias];
