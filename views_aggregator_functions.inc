@@ -150,18 +150,18 @@ function views_aggregator_average($groups, $field_handler) {
     $sum = 0.0;
     $count = 0;
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $num, FALSE);
       // Do not count empty or non-numeric cells.
-      if (is_numeric($cell)) {
+      $cell = vap_num(views_aggregator_get_cell($field_handler, $num, FALSE));
+      if ($cell !== FALSE) {
         $sum += $cell;
         $count++;
       }
     }
-    $values[$group] = $sum / $count;
+    $values[$group] = ($count == 0) ? 0.0 : $sum / $count;
     $sum_column += $sum;
     $count_column += $count;
   }
-  $values['column'] = $sum_column / $count_column;
+  $values['column'] = ($count_column == 0) ? 0.0 : $sum_column / $count_column;
   return $values;
 }
 
@@ -219,7 +219,7 @@ function views_aggregator_enumerate($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $cell_values = array();
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
+      $cell = trim(views_aggregator_get_cell($field_handler, $num, TRUE));
       if (!empty($cell) && !in_array($cell, $cell_values)) {
         $cell_values[] = $cell;
       }
@@ -449,8 +449,9 @@ function views_aggregator_sum($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $num, FALSE);
-      $sum += $cell;
+      if ($cell = views_aggregator_get_cell($field_handler, $num, FALSE)) {
+        $sum += $cell;
+      }
     };
     $values[$group] = $sum;
     $sum_column += $sum;
@@ -476,7 +477,7 @@ function views_aggregator_tally($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $tally = array();
     foreach ($rows as $num => $row) {
-      $cell = views_aggregator_get_cell($field_handler, $num, TRUE);
+      $cell = trim(views_aggregator_get_cell($field_handler, $num, TRUE));
       if (empty($cell)) {
         // Not tallying empty values.
         $values[$group] = NULL;
@@ -517,11 +518,11 @@ function views_aggregator_tally($groups, $field_handler) {
  *
  * @param string $string
  *
- * @return double
- *   Returns zero, if no number could be found in the string.
+ * @return mixed
+ *   Returns double or FALSE, if no number could be found in the string.
  *
  * @todo: allow , (thousands separator)
  */
 function vap_num($string) {
-  return preg_match('/[-+]?\d*\.?\d+/', $string, $matches) ? (double)$matches[0] : 0.0;
+  return preg_match('/[-+]?\d*\.?\d+/', $string, $matches) ? (double)$matches[0] : FALSE;
 }

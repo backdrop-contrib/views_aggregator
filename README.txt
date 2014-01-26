@@ -12,7 +12,7 @@ o can aggregate across entire columns (e.g show column data range at the top)
 o lets you add your own custom aggregation functions to the existing set
 o aggregation functions can take parameters, as currently employed by "Filter
   rows", "Count" and "Label"
-o supports Webform 7.x-4.x
+o supports "Webform submission data: Value" fields (Webform 7.x-4.x)
 
 Basics Recap: what is aggregation again?
 ----------------------------------------

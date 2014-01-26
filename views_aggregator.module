@@ -154,7 +154,7 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
       $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
       // The final step is to theme the rendered values.
       // An alternative for the line below is:
-      // return $views_field_handler->advanced_render($row);
+      //return $views_field_handler->advanced_render($row);
       return $views_field_handler->theme($row);
     }
   }

@@ -20,7 +20,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function option_definition() {
     $options = parent::option_definition();
     $options['totals_per_page'] = array('default' => TRUE);
-    $options['totals_row_position'] = array('default' => array(0, 2));
+    $options['totals_row_position'] = array('default' => array(1 => 0, 2 => 1));
     return $options;
   }
 
@@ -134,41 +134,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           ),
         ),
       );
-      /*
-        // Convert the Sortable checkbox to a tri-state (radios or select)
-        $form['info'][$field]['sortable'] = array(
-          '#type' => 'select',
-          '#options' => array(
-            0 => 'No',
-            1 => 'Yes, alphabetically',
-            2 => 'Yes, numerically'
-          ),
-          '#default_value' => isset($this->options['info'][$field]['sortable']) ? $this->options['info'][$field]['sortable'] : 1,
-        );
-        // Adjust Default Sort Order to depend on 2 out of 3 states.
-        // See views_plugin_style_table.inc
-        $safe = str_replace(array('][', '_', ' '), '-', $field);
-        $id = 'edit-style-options-columns-' . $safe;
-        $form['info'][$field]['default_sort_order'] = array(
-          '#type' => 'select',
-          '#options' => array('asc' => t('Ascending'), 'desc' => t('Descending')),
-          '#default_value' => !empty($this->options['info'][$field]['default_sort_order']) ? $this->options['info'][$field]['default_sort_order'] : 'asc',
-          '#dependency_count' => 2,
-          '#dependency' => array($id => array($field), 'edit-style-options-info-' . $safe . '-sortable' => array(1, 2)),
-        );
-        // Provide an ID so we can have such things.
-        $radio_id = drupal_html_id('edit-default-' . $field);
-        $form['default'][$field] = array(
-          '#type' => 'radio',
-          '#return_value' => $field,
-          '#parents' => array('style_options', 'default'),
-          '#id' => $radio_id,
-          // Because 'radio' doesn't fully support '#id' =(
-          '#attributes' => array('id' => $radio_id),
-          '#default_value' => $default,
-          '#dependency' => array($id => array($field)),
-        );
-      */
     }
     $form['totals_per_page'] = array(
       '#title' => t('Column aggregation row applies to:'),
@@ -380,6 +345,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $field_handlers = $this->view->field;
     $values = array();
     foreach ($functions as $field_name => $field_functions) {
+      if (empty($field_handlers[$field_name])) {
+        continue;
+      }
       $options = $this->options['info'][$field_name];
       foreach ($field_functions as $function) {
         $group_par = (!isset($options['aggr_par']) || $options['aggr_par'] == '') ? NULL : $options['aggr_par'];
@@ -436,14 +404,15 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
     if (isset($this->rendered_fields[$row_num][$field_name])) {
-      if (is_a($field_handler, 'views_handler_field_math')) {
+      if (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
         // Bit of a hack for "Global: Math expression" and "Webform submission
         // data: Value(...)" fields. Always pick up the rendered fields as it
         // seems that's all we can get! Then ignore non-numeric leading
-        // characters like currency signs.
-        return vap_num($this->rendered_fields[$row_num][$field_name]);
+        // characters like currency signs, if $render==FALSE.
+        $value = $this->rendered_fields[$row_num][$field_name];
+        return $render ? $value : vap_num($value);
       }
-      elseif ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
+      elseif ($render) {
         return $this->rendered_fields[$row_num][$field_name];
       }
     }
@@ -510,6 +479,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $field_alias = $field_handler->field_alias;
     $result_row = $field_handler->view->result[$row_num];
     $is_set = TRUE;
+
+    // Deal here with "No results" behaviour, in particular for Math Expr. ?
+
     if (is_a($field_handler, 'views_php_handler_field')) {
       if (isset($result_row->{$field_alias})) {
         $result_row->{$field_alias} = $new_value;
@@ -525,10 +497,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // Set last_render as render_text() relies on it.
       $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $new_value);
       $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
-      // Avoid double rewriting of Webform results.
-      if (is_a($field_handler, 'webform_handler_field_submission_data')) {
+      // Try to avoid double rewriting in Tallies and Enumerations. This is
+      // a poor heuristic approach. @todo
+      if (strpos($new_value, '<br/>')) {
         unset($alter['alter_text']);
       }
+      $field_handler->view->row_index = $row_num;
       $new_value = $field_handler->render_text($alter);
     }
     elseif (is_a($field_handler, 'views_handler_field_field')) {
@@ -593,12 +567,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
             // wrong (i.e. Webform sid) field_handler->field_alias.
             // Set last_render as render_text() relies on it.
             $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $group['column']);
-            $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
-            $totals[$field_name] = $field_handler->render_text($alter);
           }
           else {
-            $totals[$field_name] = views_aggregator_render_field($field_handler, NULL, $group['column']);
+            $field_handler->last_render= views_aggregator_render_field($field_handler, NULL, $group['column']);
           }
+          $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
+          $totals[$field_name] = $field_handler->render_text($alter);
         }
       }
     }
