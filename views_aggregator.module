@@ -202,7 +202,7 @@ function views_aggregator_format_numeric_field($views_handler, $raw_value) {
     (isset($views_handler->options['prefix']) ? $views_handler->options['prefix'] : '') .
     $value .
     (isset($views_handler->options['suffix']) ? $views_handler->options['suffix'] : '');
-  return $views_handler->sanitize_value($full_value);
+  return $views_handler->sanitize_value($full_value, 'xss_admin');
 }
 
 

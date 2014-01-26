@@ -11,7 +11,8 @@ o can filter out rows on regular expressions (regexp)
 o can aggregate across entire columns (e.g show column data range at the top)
 o lets you add your own custom aggregation functions to the existing set
 o aggregation functions can take parameters, as currently employed by "Filter
-  rows", "Count" and "Label".
+  rows", "Count" and "Label"
+o supports Webform 7.x-4.x
 
 Basics Recap: what is aggregation again?
 ----------------------------------------
@@ -20,7 +21,7 @@ and collapsing result rows on the identical values of ONE column, while at the
 same time applying "summary" functions on other columns. For example you can
 group the result set on a taxonomy term, so that all rows sharing the same
 value of the taxonomy column are represented as single rows, with aggregation
-functions, like COUNT, SUM, or ENUMERATE applied to the remaining columns.
+functions, like TALLY, SUM, or ENUMERATE applied to the remaining columns.
 
 Example
 -------
@@ -36,8 +37,8 @@ Food    |   McRonalds | $500,000,000 |
 
 Then with the grouping taking place on, say Industry, and aggregation functions
 COUNT and SUM applied on Company Name and Turnover respectively, the final
-result will display like below. A descending sort was applied to Turnover and
-the display name of "Company Name" was changed to "Comp. Count".
+result will display like below. A descending sort was applied to
+Turnover and the display name of "Company Name" was changed to "Comp. Count".
 
 Industry| Comp. Count |     Turnover |
 --------|-------------|--------------|
@@ -46,7 +47,9 @@ Clothing|           1 |  $99,000,000 |
 IT      |           2 |  $30,000,000 |
 
 That's the basics and you can do the above with Views. But with Views
-Aggregator Plus (VAgg+) you can also aggregate like so:
+Aggregator Plus (VAgg+) you can also aggregate like below, using its TALLY and
+ENUMERATE group aggregation functions, as well as LABEL, COUNT and SUM for the
+added bottom row.
 
 Industry    |Companies           |     Turnover |
 ------------|--------------------|--------------|
@@ -57,8 +60,7 @@ IT (2)      |AcquiB, PreviousBest|  $30,000,000 |
 Totals      |                  5 | $695,000,000 |
 ------------------------------------------------
 
-Note that the module applied a descending sort and added a summary row too.
-But that's just the beginning. Don't forget you can aggregate on ViewsPHP
+But that's just the beginning. Remember, you can aggregate on ViewsPHP
 expressions, so the possibilities are endless! Say you have a content type
 "event" that has a date range field on it with both start and end components
 active. Let's say its machine name is "field_duration". The code snippet below

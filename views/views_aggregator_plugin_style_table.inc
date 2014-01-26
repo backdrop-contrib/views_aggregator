@@ -436,14 +436,14 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
     if (isset($this->rendered_fields[$row_num][$field_name])) {
-      if (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
+      if (is_a($field_handler, 'views_handler_field_math')) {
         // Bit of a hack for "Global: Math expression" and "Webform submission
         // data: Value(...)" fields. Always pick up the rendered fields as it
         // seems that's all we can get! Then ignore non-numeric leading
         // characters like currency signs.
         return vap_num($this->rendered_fields[$row_num][$field_name]);
       }
-      elseif ($render) {
+      elseif ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
         return $this->rendered_fields[$row_num][$field_name];
       }
     }
@@ -518,11 +518,17 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $field_handler->options['php_output'] = FALSE;
       }
     }
-    elseif (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
-      // Cannot use views_aggregator_render_field due to lack of alias.
+    elseif (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
+      is_a($field_handler, 'webform_handler_field_submission_data')) {
+      // Cannot use views_aggregator_render_field() due to missing or wrong
+      // (i.e. Webform sid) field_handler->field_alias.
       // Set last_render as render_text() relies on it.
       $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $new_value);
       $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
+      // Avoid double rewriting of Webform results.
+      if (is_a($field_handler, 'webform_handler_field_submission_data')) {
+        unset($alter['alter_text']);
+      }
       $new_value = $field_handler->render_text($alter);
     }
     elseif (is_a($field_handler, 'views_handler_field_field')) {
@@ -534,7 +540,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       }
     }
     elseif (isset($result_row->{$field_alias})) {
-      // Node property, not a field. Example: 'node_title'.
+      // Not a field, but node property or Webform sid. Example: 'node_title'.
       $result_row->{$field_alias} = $new_value;
     }
     $field_name = $field_handler->options['id'];
@@ -573,7 +579,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   protected function set_totals_row($values) {
     $totals = array();
-    $dont_render_functions = array('views_aggregator_count', 'views_aggregator_range');
+    $dont_render_functions = array('views_aggregator_count', 'views_aggregator_range', 'views_aggregator_replace');
     foreach ($values as $field_name => $group) {
       if (!empty($this->options['info'][$field_name]['has_aggr_column']) && isset($group['column'])) {
         if (in_array($this->options['info'][$field_name]['aggr_column'], $dont_render_functions)) {
@@ -581,8 +587,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
         else {
           $field_handler = $this->view->field[$field_name];
-          if (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
-            // Cannot use views_aggregator_render_field due to lack of alias.
+          if (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
+            is_a($field_handler, 'webform_handler_field_submission_data')) {
+            // Cannot use views_aggregator_render_field() due to missing or
+            // wrong (i.e. Webform sid) field_handler->field_alias.
             // Set last_render as render_text() relies on it.
             $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $group['column']);
             $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
@@ -642,7 +650,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // makes normal column sorting more efficient by not adding any unnecessary
     // WHERE-clauses.
     if (!is_a($this->view->field[$sort], 'views_handler_field_math') &&
-      !is_a($this->view->field[$sort], 'webform_handler_field_submission_data') &&
+      //!is_a($this->view->field[$sort], 'webform_handler_field_submission_data') &&
       empty($this->options['info'][$sort]['has_aggr'])) {
       $this->view->field[$sort]->click_sort($this->order);
     }
