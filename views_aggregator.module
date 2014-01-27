@@ -73,9 +73,7 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
   if (empty($name)) {
     return $aggregation_functions;
   }
-  if (isset($aggregation_functions[$name])) {
-    return $aggregation_functions[$name];
-  }
+  return isset($aggregation_functions[$name]) ? $aggregation_functions[$name] : array();
 }
 
 /**
@@ -172,7 +170,10 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
  *
  * @param object $views_field_handler
  * @param double $raw_value
+ *
  * @return string, number formatted according to Views handler settings
+ *
+ * Note: this was taken in part from views_handler_field_math::render($values)
  */
 function views_aggregator_format_numeric_field($views_handler, $raw_value) {
   if (!empty($views_handler->options['set_precision'])) {
@@ -190,7 +191,7 @@ function views_aggregator_format_numeric_field($views_handler, $raw_value) {
   else {
     $value = $raw_value;
   }
-  // Check to see if hiding should happen before adding prefix and suffix.
+  // Check to see if hiding should happen.
   if ($views_handler->options['hide_empty'] && empty($value) && ($value !== 0 || $views_handler->options['empty_zero'])) {
     return '';
   }
@@ -198,13 +199,13 @@ function views_aggregator_format_numeric_field($views_handler, $raw_value) {
   if (!empty($views_handler->options['format_plural']) && ($value != 0 || !$views_handler->options['empty_zero'])) {
     $value = format_plural($value, $views_handler->options['format_plural_singular'], $views_handler->options['format_plural_plural']);
   }
-  $full_value =
-    (isset($views_handler->options['prefix']) ? $views_handler->options['prefix'] : '') .
-    $value .
-    (isset($views_handler->options['suffix']) ? $views_handler->options['suffix'] : '');
-  return $views_handler->sanitize_value($full_value, 'xss_admin');
+  if (empty($value)) {
+    return '';
+  }
+  $prefix = isset($views_handler->options['prefix']) ? $views_handler->options['prefix'] : '';
+  $suffix = isset($views_handler->options['suffix']) ? $views_handler->options['suffix'] : '';
+  return $views_handler->sanitize_value($prefix . $value . $suffix, 'xss_admin');
 }
-
 
 /**
  * Prepare to render the view results as a table style.
