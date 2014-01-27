@@ -116,19 +116,21 @@ function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) 
 function views_aggregator_render_field($views_field_handler, $row_num = NULL, $raw_value = NULL) {
   $field_alias = $views_field_handler->field_alias;
   $row = isset($row_num) ? $views_field_handler->view->result[$row_num] : reset($views_field_handler->view->result);
+  $affect_view = isset($row_num);
   if (!$row || empty($row->_field_data[$field_alias])) {
     // This happens for ViewsPHP fields, for instance and for Math Expressions.
-    return !$row || isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : '?');
+    return !$row || $affect_view ? FALSE : (isset($raw_value) ? $raw_value : '?');
   }
   $_field_data = $row->_field_data[$field_alias];
   $field_name = $views_field_handler->options['id'];
   if (!is_array($_field_data['entity']->{$field_name})) {
     // E.g. when the $views_field_handler refers to a node property (rather than
     // a field) that does not have a renderer.
-    return isset($row_num) ? ($_field_data['entity']->{$field_name} = $raw_value) : $raw_value;
+    return $affect_view ? ($_field_data['entity']->{$field_name} = $raw_value) : $raw_value;
   }
-  // Clone entity if we don't want to affect the current View results.
-  $entity = isset($row_num) ? $_field_data['entity'] : clone $_field_data['entity'];
+  // Clone entity if we don't want to affect the current View results or if we
+  // have multiple displays.
+  $entity = $affect_view ? $_field_data['entity'] : clone $_field_data['entity'];
   $entity_type = $_field_data['entity_type'];
 
   $lang = is_a($views_field_handler, 'views_handler_field_field') ? $views_field_handler->field_language($entity_type, $entity) : $entity->language;
@@ -137,26 +139,33 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
     if (is_array($raw_value)) {
       $entity->{$field_name}[$lang][0] = $raw_value;
     }
-    elseif (!empty($entity->{$field_name}[$lang][0])) {
-      // This normally loops only once, with $key=='value' or $key=='tid'
-      foreach ($entity->{$field_name}[$lang][0] as $key => $value) {
-        // Cannot override 'tid' with non-numeric value.
-        if ($key != 'value' && !($key == 'tid' && is_numeric($raw_value))) {
-          return isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : $value);
-        }
-        $prev_value = $value;
-        // Like 'value', 'tid' may be set in case of min, max, most freq. etc.
-        $entity->{$field_name}[$lang][0][$key] = $raw_value;
+    elseif (isset($entity->{$field_name})) {
+      if (empty($entity->{$field_name})) {
+        // This occurs when the field is empty. May have the "No results text".
+        //$prev_value = isset($views_field_handler->options['empty']) ? $views_field_handler->options['empty'] : NULL;
+        // Cannot deal with string when expecting number.
+        $current_value = NULL;
+        $key = 'value';
       }
+      else {
+        $current_value = reset($entity->{$field_name}[$lang][0]);
+        $key = key($entity->{$field_name}[$lang][0]);
+        // Cannot override 'tid' with non-numeric value. But like 'value',
+        // 'tid' may be set in case of min, max, most frequent etc.
+        if ($key != 'value' && !($key == 'tid' && is_numeric($raw_value))) {
+          return $affect_view ? FALSE : (isset($raw_value) ? $raw_value : $value);
+        }
+      }
+      $entity->{$field_name}[$lang][0][$key] = $raw_value;
     }
-    if (isset($row_num)) {
+    if ($affect_view) {
       // Next employ set_items() to re-render the $entity updated above,
       // placing both the 'raw' and 'rendered' versions in field_...[].
       $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
-      // Now set the old value back, in case we have multiple displays.
-      if (isset($key)) {
-        $entity->{$field_name}[$lang][0][$key] = $prev_value;
-      }
+      // Now set the current value back in case we have multiple displays, all
+      // drawing from the same entity.
+      $entity->{$field_name}[$lang][0][$key] = $current_value;
+
       // The final step is to theme the rendered values.
       // An alternative for the line below is:
       //return $views_field_handler->advanced_render($row);
