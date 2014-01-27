@@ -138,18 +138,25 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
       $entity->{$field_name}[$lang][0] = $raw_value;
     }
     elseif (!empty($entity->{$field_name}[$lang][0])) {
-      foreach ($entity->{$field_name}[$lang][0] as $name => $value) {
-        if ($name != 'value' && !($name == 'tid' && is_numeric($raw_value))) {
+      // This normally loops only once, with $key=='value' or $key=='tid'
+      foreach ($entity->{$field_name}[$lang][0] as $key => $value) {
+        // Cannot override 'tid' with non-numeric value.
+        if ($key != 'value' && !($key == 'tid' && is_numeric($raw_value))) {
           return isset($row_num) ? FALSE : (isset($raw_value) ? $raw_value : $value);
         }
-        // The tid may be set in case of min, max, most frequent etc.
-        $entity->{$field_name}[$lang][0][$name] = $raw_value;
+        $prev_value = $value;
+        // Like 'value', 'tid' may be set in case of min, max, most freq. etc.
+        $entity->{$field_name}[$lang][0][$key] = $raw_value;
       }
     }
     if (isset($row_num)) {
       // Next employ set_items() to re-render the $entity updated above,
       // placing both the 'raw' and 'rendered' versions in field_...[].
       $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
+      // Now set the old value back, in case we have multiple displays.
+      if (isset($key)) {
+        $entity->{$field_name}[$lang][0][$key] = $prev_value;
+      }
       // The final step is to theme the rendered values.
       // An alternative for the line below is:
       //return $views_field_handler->advanced_render($row);

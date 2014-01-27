@@ -20,7 +20,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function option_definition() {
     $options = parent::option_definition();
     $options['totals_per_page'] = array('default' => TRUE);
-    $options['totals_row_position'] = array('default' => array(1 => 0, 2 => 1));
+    $options['totals_row_position'] = array('default' => array(1 => 0, 2 => 2));
     return $options;
   }
 
