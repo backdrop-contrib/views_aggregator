@@ -420,11 +420,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       return '';
     }
     $field_handler->view->row_index = $row_num;
-    return $this->get_cell_raw($field_handler, $field_handler->view->result[$row_num]);
+    return $this->get_cell_raw($field_handler, $field_handler->view->result[$row_num], TRUE);
   }
 
   /**
    * Returns the raw, unrendered result at the intersection of column and row.
+   *
+   * You should normally not call this, especially not for Math Expr. fields.
    *
    * @param object $field_handler
    *   The handler associated with the result column being requested.
@@ -437,6 +439,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   the raw contents of the cell
    */
   protected function get_cell_raw($field_handler, $result_row, $compressed = TRUE) {
+    // If the field_handler is views_handler_field_field, get_value() may start
+    // with cloning the entity pointed to by _field_data, most commonly:
+    // $result_row->_field_data['nid']['entity']
     $value = $field_handler->get_value($result_row);
     if (!isset($value)) {
       // This may happen with a $field_handler like views_php_handler_field that
@@ -653,33 +658,37 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // o dates and date ranges
     //
     // Columns that need to be sorted using rendered, post-aggregated values:
-    // o everything else, e.g hyper-linked titles, taxonomy terms, enumerations
-    // and tallies: but after the HTML has been stripped out.
+    // o everything other than the above, e.g hyper-linked titles, taxonomy
+    // terms, enumerations and tallies... after the HTML has been stripped out.
 
     $field_handler = $this->view->field[$this->active];
-    if (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
-      $compare_rendered = TRUE;
+    if (is_a($field_handler, 'views_handler_field_math')) {
+      // For Math Expr we want to compare raw numeric values.
+      $cell1 = $this->get_cell($field_handler, $row1->num, $compare_rendered = FALSE);
+      $cell2 = $this->get_cell($field_handler, $row2->num, $compare_rendered);
+      $compare = $cell1 == $cell2 ? 0 : ($cell1 < $cell2 ? -1 : 1);
     }
     else {
+      // Taxonomy terms are compared in rendered format.
       $cell1 = $this->get_cell_raw($field_handler, $row1, FALSE);
       $compare_rendered = isset($cell1[0]['tid']);
-    }
-    if (!$compare_rendered) {
-      $cell1 = $this->get_cell_raw($field_handler, $row1, TRUE);
-      $cell2 = $this->get_cell_raw($field_handler, $row2, TRUE);
-      $compare_rendered = !is_numeric($cell1) || !is_numeric($cell2);
-    }
-    if ($compare_rendered) {
-      $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, TRUE));
-      $cell2 = strip_tags($this->get_cell($field_handler, $row2->num, TRUE));
-    }
-    if ((double)$cell1 == (double)$cell2) {
-      // If both cells cast to zero, then compare alphabetically.
-      $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
-    }
-    else {
-      // Compare numerically.
-      $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
+      if (!$compare_rendered) {
+        $cell1 = $this->get_cell($field_handler, $row1->num, $compare_rendered);
+        $cell2 = $this->get_cell($field_handler, $row2->num, $compare_rendered);
+        $compare_rendered = !is_numeric($cell1) || !is_numeric($cell2);
+      }
+      if ($compare_rendered) {
+        $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, $compare_rendered));
+        $cell2 = strip_tags($this->get_cell($field_handler, $row2->num, $compare_rendered));
+      }
+      if ((double)$cell1 == (double)$cell2) {
+        // If both cells cast to zero, then compare alphabetically.
+        $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
+      }
+      else {
+        // Compare numerically.
+        $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
+      }
     }
     return ($this->order == 'asc') ? $compare : -$compare;
   }
