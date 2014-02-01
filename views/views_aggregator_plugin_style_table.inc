@@ -404,16 +404,17 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
     if (isset($this->rendered_fields[$row_num][$field_name])) {
-      if (is_a($field_handler, 'views_handler_field_math') || is_a($field_handler, 'webform_handler_field_submission_data')) {
-        // Bit of a hack for "Global: Math expression" and "Webform submission
-        // data: Value(...)" fields. Always pick up the rendered fields as it
-        // seems that's all we can get! Then ignore non-numeric leading
-        // characters like currency signs, if $render==FALSE.
-        $value = $this->rendered_fields[$row_num][$field_name];
-        return $render ? $value : vap_num($value);
+      $value = $this->rendered_fields[$row_num][$field_name];
+      // Bit of a hack for "Global: Math expression" and "Webform submission
+      // data: Value(...)" fields. Always pick up the rendered fields as it
+      // seems that's all we can get!
+      if ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
+        return $value;
       }
-      elseif ($render) {
-        return $this->rendered_fields[$row_num][$field_name];
+      if (is_a($field_handler, 'views_handler_field_math')) {
+        // For $render==FALSE, ignore non-numeric leading characters like
+        // currency signs.
+        return vap_num($value);
       }
     }
     if (!isset($field_handler->view->result[$row_num])) {
@@ -656,17 +657,16 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // o dates and date ranges (@todo)
     //
     // Columns that need to be sorted using rendered, post-aggregated values:
-    // o Views PHP expressions, addresses, taxonomy terms, tallies (need to be
-    //   sorted by their group names, not their counts)
+    // o Views PHP expressions, addresses, taxonomy terms
 
-    $sort_field = $this->active;
-    $field_handler = $this->view->field[$sort_field];
+    $field_handler = $this->view->field[$this->active];
     $field_type = isset($field_handler->field_info['type']) ? $field_handler->field_info['type'] : '';
-    $options = $this->options['info'][$sort_field];
+/*
+    $options = $this->options['info'][$this->active];
     if (!empty($options['has_aggr'])) {
       $aggr_functions = $options['aggr'];
     }
-
+*/
     // AddressFields, taxonomy terms and Views PHP expressions are compared in
     // rendered format.
     $compare_rendered =
@@ -684,6 +684,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     else {
       // Compare numerically, i.e. "20 km" comes after "9.5 km".
+      // The case to double reads up to the first non-number related char.
       $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
     }
 
