@@ -28,10 +28,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Create the tabular form with the aggregation options.
    */
   public function options_form(&$form, &$form_state) {
-    
+
     $handlers = $this->display->handler->get_handlers('field');
     $columns = $this->sanitize_columns($this->options['columns']);
-    
+
     foreach ($columns as $field => $column) {
       if ($field == $column) {
         // Make all columns potentially sortable, including Math Expressions.
@@ -656,10 +656,16 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // o dates and date ranges (@todo)
     //
     // Columns that need to be sorted using rendered, post-aggregated values:
-    // o Views PHP expressions, addresses, taxonomy terms
+    // o Views PHP expressions, addresses, taxonomy terms, tallies (need to be
+    //   sorted by their group names, not their counts)
 
-    $field_handler = $this->view->field[$this->active];
+    $sort_field = $this->active;
+    $field_handler = $this->view->field[$sort_field];
     $field_type = isset($field_handler->field_info['type']) ? $field_handler->field_info['type'] : '';
+    $options = $this->options['info'][$sort_field];
+    if (!empty($options['has_aggr'])) {
+      $aggr_functions = $options['aggr'];
+    }
 
     // AddressFields, taxonomy terms and Views PHP expressions are compared in
     // rendered format.
@@ -671,7 +677,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // Note that raw data may contain HTML tags too, so always strip.
     $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, $compare_rendered));
     $cell2 = strip_tags($this->get_cell($field_handler, $row2->num, $compare_rendered));
-    
+
     if ((double)$cell1 == (double)$cell2) {
       // If both cells cast to zero, then compare alphabetically.
       $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
