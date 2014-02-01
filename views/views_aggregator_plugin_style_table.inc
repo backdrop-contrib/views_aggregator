@@ -656,14 +656,15 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // o dates and date ranges (@todo)
     //
     // Columns that need to be sorted using rendered, post-aggregated values:
-    // o Views PHP expressions, , addresses, taxonomy terms
+    // o Views PHP expressions, addresses, taxonomy terms
 
     $field_handler = $this->view->field[$this->active];
     $field_type = isset($field_handler->field_info['type']) ? $field_handler->field_info['type'] : '';
 
     // AddressFields, taxonomy terms and Views PHP expressions are compared in
     // rendered format.
-    $compare_rendered = ($field_type == 'addressfield') ||
+    $compare_rendered =
+       ($field_type == 'addressfield') ||
        ($field_type == 'taxonomy_term_reference') ||
        is_a($field_handler, 'views_php_handler_field');
 
@@ -676,7 +677,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $compare = ($cell1 == $cell2) ? 0 : ($cell1 < $cell2 ? -1 : 1);
     }
     else {
-      // Compare numerically.
+      // Compare numerically, i.e. "20 km" comes after "9.5 km".
       $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
     }
 
