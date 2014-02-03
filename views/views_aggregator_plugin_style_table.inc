@@ -498,7 +498,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     elseif (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
       is_a($field_handler, 'webform_handler_field_submission_data')) {
-      // Cannot use views_aggregator_render_field() due to missing or wrong
+      // Cannot use views_aggregator_render_from_raw() due to missing or wrong
       // (i.e. Webform sid) field_handler->field_alias.
       // Set last_render as render_text() relies on it.
       $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $new_value);
@@ -512,7 +512,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $new_value = $field_handler->render_text($alter);
     }
     elseif (is_a($field_handler, 'views_handler_field_field')) {
-      if ($rendered_value = views_aggregator_render_field($field_handler, $row_num, $new_value)) {
+      if ($rendered_value = views_aggregator_render_from_raw($field_handler, $row_num, $new_value)) {
         $new_value = $rendered_value;
       }
       else {
@@ -555,7 +555,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Write the aggregated results back into the View results totals (footer).
    *
    * @param array $values
-   *   an array of field value arrays, indexed by field name and 'colomn'
+   *   an array of field value arrays, indexed by field name and 'column'
    */
   protected function set_totals_row($values) {
     $totals = array();
@@ -569,13 +569,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           $field_handler = $this->view->field[$field_name];
           if (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
             is_a($field_handler, 'webform_handler_field_submission_data')) {
-            // Cannot use views_aggregator_render_field() due to missing or
+            // Cannot use views_aggregator_render_from_raw() due to missing or
             // wrong (i.e. Webform sid) field_handler->field_alias.
             // Set last_render as render_text() relies on it.
             $field_handler->last_render = views_aggregator_format_numeric_field($field_handler, $group['column']);
           }
           else {
-            $field_handler->last_render= views_aggregator_render_field($field_handler, NULL, $group['column']);
+            $field_handler->last_render= views_aggregator_render_from_raw($field_handler, NULL, $group['column']);
           }
           $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
           $totals[$field_name] = $field_handler->render_text($alter);
@@ -630,7 +630,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // makes normal column sorting more efficient by not adding any unnecessary
     // WHERE-clauses.
     if (!is_a($this->view->field[$sort], 'views_handler_field_math') &&
-      //!is_a($this->view->field[$sort], 'webform_handler_field_submission_data') &&
       empty($this->options['info'][$sort]['has_aggr'])) {
       $this->view->field[$sort]->click_sort($this->order);
     }
@@ -687,7 +686,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // The case to double reads up to the first non-number related char.
       $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
     }
-
     return ($this->order == 'asc') ? $compare : -$compare;
   }
 

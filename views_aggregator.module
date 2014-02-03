@@ -96,7 +96,7 @@ function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) 
 /**
  * Render a field from a raw value, with or without affecting the View result.
  *
- * The field will be rendered without label, with appropriate CSS classes.
+ * The field will be rendered with appropriate CSS classes, without label.
  *
  * NB: This is messy code. The lengths we have to go through for this are just
  * ridiculous. Patches welcome!
@@ -113,7 +113,8 @@ function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) 
  * @return string
  *   The rendered value or FALSE, if the type of field is not supported.
  */
-function views_aggregator_render_field($views_field_handler, $row_num = NULL, $raw_value = NULL) {
+function views_aggregator_render_from_raw($views_field_handler, $row_num = NULL, $raw_value = NULL) {
+  $field_name = $views_field_handler->options['id'];
   $field_alias = $views_field_handler->field_alias;
   $row = isset($row_num) ? $views_field_handler->view->result[$row_num] : reset($views_field_handler->view->result);
   $affect_view = isset($row_num);
@@ -122,8 +123,7 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
     return !$row || $affect_view ? FALSE : (isset($raw_value) ? $raw_value : '?');
   }
   $_field_data = $row->_field_data[$field_alias];
-  $field_name = $views_field_handler->options['id'];
-  if (!is_array($_field_data['entity']->{$field_name})) {
+  if (isset($_field_data['entity']->{$field_name}) && is_scalar($_field_data['entity']->{$field_name})) {
     // E.g. when the $views_field_handler refers to a node property (rather than
     // a field) that does not have a renderer.
     return $affect_view ? ($_field_data['entity']->{$field_name} = $raw_value) : $raw_value;
@@ -164,7 +164,9 @@ function views_aggregator_render_field($views_field_handler, $row_num = NULL, $r
       $row->{'field_' . $field_name} = $views_field_handler->set_items($row, $row_num);
       // Now set the current value back in case we have multiple displays, all
       // drawing from the same entity.
-      $entity->{$field_name}[$lang][0][$key] = $current_value;
+      if (isset($key)) {
+        $entity->{$field_name}[$lang][0][$key] = $current_value;
+      }
 
       // The final step is to theme the rendered values.
       // An alternative for the line below is:
