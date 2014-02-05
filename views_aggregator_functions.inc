@@ -50,6 +50,10 @@ function views_aggregator_views_aggregation_functions_info() {
       'group' => t('Maximum'),
       'column' => t('Maximum'),
     ),
+    'views_aggregator_median' => array(
+      'group' => t('Median'),
+      'column' => t('Median'),
+    ),
     'views_aggregator_minimum' => array(
       'group' => t('Minimum'),
       'column' => t('Minimum'),
@@ -140,7 +144,7 @@ function views_aggregator_group_and_compress($view_results, $field_handler) {
  *   the handler for the view column to find the minimum in
  *
  * @return array
- *   an array of column values, one for each group and one for the column.
+ *   an array of values, one for each group and one for the column.
  */
 function views_aggregator_average($groups, $field_handler) {
   $values = array();
@@ -178,7 +182,7 @@ function views_aggregator_average($groups, $field_handler) {
  *   an optional regexp to count, if omitted all non-empty group values count
  *
  * @return array
- *   an array of column values, one for each group and one for the column
+ *   an array of values, one for each group and one for the column
  */
 function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $column_regexp = NULL) {
   $values = array();
@@ -212,7 +216,7 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
  *   the handler for the view column to find members of the group
  *
  * @return array
- *   an array of column values, one for each group.
+ *   an array of values, one for each group.
  */
 function views_aggregator_enumerate($groups, $field_handler) {
   $values = array();
@@ -248,7 +252,7 @@ function views_aggregator_enumerate($groups, $field_handler) {
  *   an optional regexp to count, if omitted all non-empty group values count
  *
  * @return array
- *   an array of column values, one for each group and one for the column
+ *   an array of values, one for each group and one for the column
  */
 function views_aggregator_expression($groups, $field_handler, $group_exp = NULL, $column_exp = NULL) {
   $values = array();
@@ -299,7 +303,7 @@ function views_aggregator_first($groups, $field_handler) {
  *   the handler for the view column to find the maximum groups member in
  *
  * @return array
- *   an array of column values, one for each group, plus the 'column' group
+ *   an array of values, one for each group, plus the 'column' group
  */
 function views_aggregator_maximum($groups, $field_handler) {
   $values = array();
@@ -325,6 +329,46 @@ function views_aggregator_maximum($groups, $field_handler) {
 }
 
 /**
+ * Aggregates a field group as the median across its members.
+ *
+ * This function was written for numbers, but also tries to do a half-decent
+ * job of dealing with the median of a group/column of strings.
+ *
+ * @param array $groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object $field_handler
+ *   the handler for the view column to calculate the median for
+ *
+ * @return array
+ *   an array of values, one for each group, plus the 'column' group
+ */
+function views_aggregator_median($groups, $field_handler) {
+  $values = array();
+  $column_cells = array();
+  foreach ($groups as $group => $rows) {
+    $group_cells = array();
+    foreach ($rows as $num => $row) {
+      $cell = views_aggregator_get_cell($field_handler, $num, FALSE);
+      if ($cell !== FALSE && trim($cell) != '') {
+        $group_cells[] = $cell;
+        $column_cells[] = $cell;
+      }
+    }
+    if (!empty($group_cells)) {
+      sort($group_cells);
+      $m = (int)(count($group_cells) / 2);
+      $values[$group] = vap_num($group_cells[$m]) === FALSE || count($group_cells) % 2 ? $group_cells[$m] : ($group_cells[$m] + $group_cells[$m - 1]) / 2;
+    }
+  }
+  if (!empty($column_cells)) {
+    sort($column_cells);
+    $m = (int)(count($column_cells) / 2);
+    $values['column'] = vap_num($column_cells[$m]) === FALSE || count($column_cells) % 2 ? $column_cells[$m] : ($column_cells[$m] + $column_cells[$m - 1]) / 2;
+  }
+  return $values;
+}
+
+/**
  * Aggregates a field group as the minimum across its members.
  *
  * @param array $groups
@@ -333,7 +377,7 @@ function views_aggregator_maximum($groups, $field_handler) {
  *   the handler for the view column to find the minimum groups member in
  *
  * @return array
- *   an array of column values, one for each group, plus the 'column' group
+ *   an array of values, one for each group, plus the 'column' group
  */
 function views_aggregator_minimum($groups, $field_handler) {
   $values = array();
@@ -367,7 +411,7 @@ function views_aggregator_minimum($groups, $field_handler) {
  *   the handler for the view column
  *
  * @return array
- *   an array of column values, one for each group and one for the 'column'
+ *   an array of values, one for each group and one for the 'column'
  */
 function views_aggregator_range($groups, $field_handler) {
   $values = array();
@@ -411,7 +455,7 @@ function views_aggregator_range($groups, $field_handler) {
  *   an optional parameter, specifying a label placed the bottom of the column
  *
  * @return array
- *   an array of column values, one for each group and one for the 'column'
+ *   an array of values, one for each group and one for the 'column'
  */
 function views_aggregator_replace($groups, $field_handler, $replace_text = NULL, $column_label = NULL) {
   $values = array();
@@ -441,7 +485,7 @@ function views_aggregator_replace($groups, $field_handler, $replace_text = NULL,
  *   the handler for the view column to sum groups in
  *
  * @return array
- *   an array of column values, one for each group, plus the 'column' group
+ *   an array of values, one for each group, plus the 'column' group
  */
 function views_aggregator_sum($groups, $field_handler) {
   $values = array();
@@ -469,7 +513,7 @@ function views_aggregator_sum($groups, $field_handler) {
  *   the handler for the view column to find members of the group
  *
  * @return array
- *   an array of column values, one for each group
+ *   an array of values, one for each group
  */
 function views_aggregator_tally($groups, $field_handler) {
   $values = array();
