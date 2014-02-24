@@ -297,6 +297,8 @@ function views_aggregator_first($groups, $field_handler) {
 /**
  * Aggregates a field group as the maximum across its members.
  *
+ * Using numbers mixed with non-numeric strings is not recommended.
+ *
  * @param array $groups
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
@@ -309,22 +311,29 @@ function views_aggregator_maximum($groups, $field_handler) {
   $values = array();
   foreach ($groups as $group => $rows) {
     $is_first = TRUE;
+    $maximum = NULL;
     foreach ($rows as $num => $row) {
       $value = views_aggregator_get_cell($field_handler, $num, FALSE);
-      if ($is_first) {
-        $maximum = $value;
-        $is_first = FALSE;
+      if (isset($value) && trim($value) != '') {
+        if ($is_first) {
+          $maximum = $value;
+          $is_first = FALSE;
+        }
+        elseif ($value > $maximum) {
+          $maximum = $value;
+        }
       }
-      elseif (isset($value) && $value > $maximum) {
-        $maximum = $value;
+    }
+    if (isset($maximum)) {
+      $values[$group] = $maximum;
+      if (!isset($maximum_column) || $maximum > $maximum_column) {
+        $maximum_column = $maximum;
       }
-    };
-    $values[$group] = $maximum;
-    if (!isset($maximum_column) || $maximum > $maximum_column) {
-      $maximum_column = $maximum;
     }
   }
-  $values['column'] = $maximum_column;
+  if (isset($maximum_column)) {
+    $values['column'] = $maximum_column;
+  }
   return $values;
 }
 
@@ -383,22 +392,30 @@ function views_aggregator_minimum($groups, $field_handler) {
   $values = array();
   foreach ($groups as $group => $rows) {
     $is_first = TRUE;
+    $minimum = NULL;
     foreach ($rows as $num => $row) {
       $value = views_aggregator_get_cell($field_handler, $num, FALSE);
-      if ($is_first) {
-        $minimum = $value;
-        $is_first = FALSE;
+      // Ignore empty strings
+      if (isset($value) && trim($value) != '') {
+        if ($is_first) {
+          $minimum = $value;
+          $is_first = FALSE;
+        }
+        elseif ($value < $minimum) {
+          $minimum = $value;
+        }
       }
-      elseif (isset($value) && $value < $minimum) {
-        $minimum = $value;
+    }
+    if (isset($minimum)) {
+      $values[$group] = $minimum;
+      if (!isset($minimum_column) || $minimum < $minimum_column) {
+        $minimum_column = $minimum;
       }
-    };
-    $values[$group] = $minimum;
-    if (!isset($minimum_column) || $minimum < $minimum_column) {
-      $minimum_column = $minimum;
     }
   }
-  $values['column'] = $minimum_column;
+  if (isset($minimum_column)) {
+    $values['column'] = $minimum_column;
+  }
   return $values;
 }
 
@@ -493,7 +510,8 @@ function views_aggregator_sum($groups, $field_handler) {
   foreach ($groups as $group => $rows) {
     $sum = 0.0;
     foreach ($rows as $num => $row) {
-      if ($cell = views_aggregator_get_cell($field_handler, $num, FALSE)) {
+      $cell = vap_num(views_aggregator_get_cell($field_handler, $num, FALSE));
+      if ($cell !== FALSE) {
         $sum += $cell;
       }
     };
@@ -558,15 +576,17 @@ function views_aggregator_tally($groups, $field_handler) {
 /**
  * Function to extract a double from a string, auto-skipping non-numeric chars.
  *
+ * Comma's and spaces are ignored.
  * Scientific notation, e.g. 1.23E-45, is NOT supported, it will return 1.23
  *
  * @param string $string
  *
  * @return mixed
  *   Returns double or FALSE, if no number could be found in the string.
- *
- * @todo: allow , (thousands separator)
  */
 function vap_num($string) {
-  return preg_match('/[-+]?\d*\.?\d+/', $string, $matches) ? (double)$matches[0] : FALSE;
+  // Strip out any spaces and thousand makers.
+  $stripped = str_replace(',', '', $string);
+  $stripped = str_replace(' ', '', $stripped);
+  return preg_match('/[-+]?\d*\.?\d+/', $stripped, $matches) ? (double)$matches[0] : FALSE;
 }

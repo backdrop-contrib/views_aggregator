@@ -404,17 +404,15 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
     if (isset($this->rendered_fields[$row_num][$field_name])) {
-      $value = $this->rendered_fields[$row_num][$field_name];
-      // Bit of a hack for "Global: Math expression" and "Webform submission
-      // data: Value(...)" fields. Always pick up the rendered fields as it
-      // seems that's all we can get!
+      // Bit of a hack for "Webform submission data: Value(...)" and 
+      // "Global: Math expression" fields... Always pick up the rendered fields,
+      // as it seems that's all we can get!
       if ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
-        return $value;
+        return $this->rendered_fields[$row_num][$field_name];
       }
       if (is_a($field_handler, 'views_handler_field_math')) {
-        // For $render==FALSE, ignore non-numeric leading characters like
-        // currency signs.
-        return vap_num($value);
+        // Ignore non-numeric leading characters like currency signs.
+        return vap_num($this->rendered_fields[$row_num][$field_name]);
       }
     }
     if (!isset($field_handler->view->result[$row_num])) {
