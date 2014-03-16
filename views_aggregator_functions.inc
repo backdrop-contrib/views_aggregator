@@ -586,7 +586,6 @@ function views_aggregator_tally($groups, $field_handler) {
  */
 function vap_num($string) {
   // Strip out any spaces and thousand makers.
-  $stripped = str_replace(',', '', $string);
-  $stripped = str_replace(' ', '', $stripped);
+  $stripped = str_replace(array(' ', ','), '', $string);
   return preg_match('/[-+]?\d*\.?\d+/', $stripped, $matches) ? (double)$matches[0] : FALSE;
 }
