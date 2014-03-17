@@ -404,7 +404,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   public function get_cell($field_handler, $row_num, $render) {
     $field_name = $field_handler->options['id'];
     if (isset($this->rendered_fields[$row_num][$field_name])) {
-      // Bit of a hack for "Webform submission data: Value(...)" and 
+      // Bit of a hack for "Webform submission data: Value(...)" and
       // "Global: Math expression" fields... Always pick up the rendered fields,
       // as it seems that's all we can get!
       if ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
@@ -497,7 +497,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     elseif (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
       is_a($field_handler, 'webform_handler_field_submission_data')) {
       // Cannot use render_from_raw() due to missing or wrong field_handler->
-      //   field_alias (i.e. Webform sid).
+      //   field_alias.
       // Set last_render as render_text() below relies on it.
       $field_handler->last_render = $this->format_numeric($field_handler, $new_value);
       $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
@@ -536,7 +536,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * Note: this was taken in part from views_handler_field_math::render($values)
    */
-  private function format_numeric($field_handler, $raw_value) {
+  protected function format_numeric($field_handler, $raw_value) {
     if (!empty($field_handler->options['set_precision'])) {
       $value = number_format($raw_value, $field_handler->options['precision'], $field_handler->options['decimal'], $field_handler->options['separator']);
     }
@@ -588,7 +588,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * @return string
    *   The rendered value or FALSE, if the type of field is not supported.
    */
-  private function render_from_raw($field_handler, $row_num = NULL, $raw_value = NULL) {
+  protected function render_from_raw($field_handler, $row_num = NULL, $raw_value = NULL) {
     $field_name = $field_handler->options['id'];
     $field_alias = $field_handler->field_alias;
     $row = isset($row_num) ? $field_handler->view->result[$row_num] : reset($field_handler->view->result);
@@ -697,15 +697,17 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         }
         else {
           $field_handler = $this->view->field[$field_name];
+          // This is to make render_text() below work properly.
+          $field_handler->original_value = $group['column'];
           if (empty($field_handler->field_alias) || $field_handler->field_alias == 'unknown' ||
             is_a($field_handler, 'webform_handler_field_submission_data')) {
-            // Cannot use render_from_raw() due to missing or wrong (i.e.
-            // Webform sid) field_handler->field_alias.
+            // Cannot use render_from_raw() due to missing or wrong
+            //   field_handler->field_alias.
             // Set last_render as render_text() below relies on it.
             $field_handler->last_render = $this->format_numeric($field_handler, $group['column']);
           }
           else {
-            $field_handler->last_render= $this->render_from_raw($field_handler, NULL, $group['column']);
+            $field_handler->last_render = $this->render_from_raw($field_handler, NULL, $group['column']);
           }
           $alter = array('phase' => VIEWS_HANDLER_RENDER_TEXT_PHASE_COMPLETELY) + $field_handler->options['alter'];
           $totals[$field_name] = $field_handler->render_text($alter);
@@ -790,18 +792,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
     $field_handler = $this->view->field[$this->active];
     $field_type = isset($field_handler->field_info['type']) ? $field_handler->field_info['type'] : '';
-/*
-    $options = $this->options['info'][$this->active];
-    if (!empty($options['has_aggr'])) {
-      $aggr_functions = $options['aggr'];
-    }
-*/
+
     // AddressFields, taxonomy terms and Views PHP expressions are compared in
     // rendered format.
     $compare_rendered =
-       ($field_type == 'addressfield') ||
-       ($field_type == 'taxonomy_term_reference') ||
-       is_a($field_handler, 'views_php_handler_field');
+      ($field_type == 'addressfield') ||
+      ($field_type == 'taxonomy_term_reference') ||
+      is_a($field_handler, 'views_php_handler_field');
 
     // Note that raw data may contain HTML tags too, so always strip.
     $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, $compare_rendered));
@@ -835,7 +832,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   the pageless View, including the complete rendered results set on
    *   $view->style_plugin->rendered_fields
    */
-  private function execute_view_without_pager($view_with_pager, $display_id = NULL) {
+  protected function execute_view_without_pager($view_with_pager, $display_id = NULL) {
     // This call exports the Views configuration, without any results attached.
     // We're doing it this way, because none of the below work after clone_view().
     // $view_without_pager->display['default']->handler->options['pager']['type'] = 'none';
@@ -852,11 +849,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
     // [#2213417], to avoid 2nd notice.
     $view->dom_id = $view_with_pager->dom_id;
-    
+
     // Avoid recursion in views_aggregator_plugin_style_table::pre_render().
     $view->is_temp_views_aggregator = TRUE;
 
     // As this is a copy, let's keep caching behaviour the same as the original.
+
     // Execute the display and render it.
     $view->render($display_id);
 

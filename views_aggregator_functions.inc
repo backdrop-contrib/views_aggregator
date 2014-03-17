@@ -577,7 +577,7 @@ function views_aggregator_tally($groups, $field_handler) {
  * Function to extract a double from a string, auto-skipping non-numeric chars.
  *
  * Comma's and spaces are ignored.
- * Scientific notation, e.g. 1.23E-45, is NOT supported, it will return 1.23
+ * Scientific notation, e.g., 1.23E-45, is NOT supported, it will return 1.23
  *
  * @param string $string
  *
