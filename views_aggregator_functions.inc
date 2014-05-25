@@ -39,8 +39,8 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => NULL,
     ),
     'views_aggregator_enumerate' => array(
-      'group' => t('Enumerate'),
-      'column' => NULL,
+      'group' => t('Enumerate *'),
+      'column' => t('Enumerate *'),
     ),
     'views_aggregator_replace' => array(
       'group' => t('Label (enter below) *'),
@@ -59,16 +59,16 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => t('Minimum'),
     ),
     'views_aggregator_range' => array(
-      'group' => t('Range'),
-      'column' => t('Range'),
+      'group' => t('Range *'),
+      'column' => t('Range *'),
     ),
     'views_aggregator_sum' => array(
       'group' => t('Sum'),
       'column' => t('Sum'),
     ),
     'views_aggregator_tally' => array(
-      'group' => t('Tally members'),
-      'column' => NULL,
+      'group' => t('Tally members *'),
+      'column' => NULL, // @todo t('Tally members *'),
     ),
     // This one is probably best last, because of token replacement.
     'views_aggregator_expression' => array(
@@ -129,6 +129,8 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
 function views_aggregator_group_and_compress($view_results, $field_handler) {
   $groups = array();
   foreach ($view_results as $num => $row) {
+    // Compression takes place on the rendered values. Two hyperlinks with the
+    // same display texts but different hrefs will end up in different groups.
     $group_value = views_aggregator_get_cell($field_handler, $num, TRUE);
     $groups[$group_value][$num] = $row;
   }
@@ -214,18 +216,29 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find members of the group
+ * @param string $separator_group
+ *   the separator to use in group enumerations, defaults to '<br/>'
+ * @param string $separator_column
+ *   the separator to use for the column enumeration, defaults to '<br/>'
  *
  * @return array
  *   an array of values, one for each group.
  */
-function views_aggregator_enumerate($groups, $field_handler) {
-  $values = array();
+function views_aggregator_enumerate($groups, $field_handler, $separator_group, $separator_column) {
+  $separator_group = empty($separator_group) ? '<br/>' : $separator_group;
+  $separator_column = empty($separator_column) ? '<br/>' : $separator_column;
+  $values = array('column' => array());
   foreach ($groups as $group => $rows) {
     $cell_values = array();
     foreach ($rows as $num => $row) {
       $cell = trim(views_aggregator_get_cell($field_handler, $num, TRUE));
-      if (!empty($cell) && !in_array($cell, $cell_values)) {
-        $cell_values[] = $cell;
+      if (!empty($cell)) {
+        if (!in_array($cell, $cell_values)) {
+          $cell_values[] = $cell;
+        }
+        if (!in_array($cell, $values['column'])) {
+          $values['column'][] = $cell;
+        }
       }
     }
     if (count($cell_values) > 1) {
@@ -234,8 +247,10 @@ function views_aggregator_enumerate($groups, $field_handler) {
       unset($field_handler->options['link_to_node']);
       @sort($cell_values, SORT_NATURAL | SORT_FLAG_CASE);
     }
-    $values[$group] = implode('<br/>', $cell_values);
+    $values[$group] = implode($separator_group, $cell_values);
   }
+  @sort($values['column'], SORT_NATURAL | SORT_FLAG_CASE);
+  $values['column'] = implode($separator_column, $values['column']);
   return $values;
 }
 
@@ -426,11 +441,19 @@ function views_aggregator_minimum($groups, $field_handler) {
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column
+ * @param string $separator_group
+ *   the range separator between minimum and maximum values of the group range,
+ *   not used here
+ * @param string $separator_group
+ *   the range separator between minimum and maximum values of the column range,
+ *   not used here
  *
  * @return array
- *   an array of values, one for each group and one for the 'column'
+ *   An array of ranges, one for each group and one for the 'column'.
+ *   Each range is an array of two elements, so they can be individually
+ *   rendered.
  */
-function views_aggregator_range($groups, $field_handler) {
+function views_aggregator_range($groups, $field_handler, $separator_group = NULL, $separator_column = NULL) {
   $values = array();
   foreach ($groups as $group => $rows) {
     $is_first = TRUE;
@@ -447,7 +470,7 @@ function views_aggregator_range($groups, $field_handler) {
         $maximum = $value;
       }
     };
-    $values[$group] = ($minimum == $maximum) ? $minimum : "$minimum - $maximum";
+    $values[$group] = ($minimum == $maximum) ? $minimum : array($minimum, $maximum);
     if (!isset($minimum_column) || $minimum < $minimum_column) {
       $minimum_column = $minimum;
     }
@@ -455,7 +478,7 @@ function views_aggregator_range($groups, $field_handler) {
       $maximum_column = $maximum;
     }
   }
-  $values['column'] = ($minimum_column == $maximum_column) ? $minimum_column : "$minimum_column - $maximum_column";
+  $values['column'] = ($minimum_column == $maximum_column) ? $minimum_column : array($minimum_column, $maximum_column);
   return $values;
 }
 
@@ -529,12 +552,18 @@ function views_aggregator_sum($groups, $field_handler) {
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find members of the group
+ * @param string $separator_group
+ *   the separator to use between tallies in a group, defaults to '<br/>'
+ * @param string $separator_column
+ *   the separator to use between tallies in the totals field, defaults to '<br/>'
  *
  * @return array
  *   an array of values, one for each group
  */
-function views_aggregator_tally($groups, $field_handler) {
-  $values = array();
+function views_aggregator_tally($groups, $field_handler, $separator_group, $separator_column) {
+  $separator_group = empty($separator_group) ? '<br/>' : $separator_group;
+  $separator_column = empty($separator_column) ? '<br/>' : $separator_column;
+  $values = array('column' => array());
   $is_new_php = version_compare(phpversion(), '5.4.0', '>=');
   foreach ($groups as $group => $rows) {
     $tally = array();
@@ -568,7 +597,7 @@ function views_aggregator_tally($groups, $field_handler) {
     foreach ($tally as $cell => $count) {
       $rendered_tally[] = "$cell ($count)";
     }
-    $values[$group] = implode('<br/>', $rendered_tally);
+    $values[$group] = implode($separator_group, $rendered_tally);
   }
   return $values;
 }

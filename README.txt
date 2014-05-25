@@ -12,7 +12,8 @@ o can aggregate across entire columns (e.g show column data range at the top)
 o lets you add your own custom aggregation functions to the existing set
 o aggregation functions can take parameters, as currently employed by "Filter
   rows", "Count" and "Label"
-o supports "Webform submission data: Value" fields (Webform 7.x-4.x)
+o on Views of type "Webform submissions" the module supports the field "Webform
+  submission data: Value" (requires Webform 7.x-4.x)
 
 Basics Recap: what is aggregation again?
 ----------------------------------------
@@ -70,7 +71,7 @@ each event whether it is in progress, closed or not started yet.
 <?php
   $start_date = strtotime($data->field_field_duration[0]['raw']['value']);
   $end_date   = strtotime($data->field_field_duration[0]['raw']['value2']);
-  echo time() < $start_date ? 'not started' : (time() < $end_date ? 'in progress' : 'closed');
+  echo time() < $start_date ? 'not started' : (time() < $end_date ? 'underway' : 'closed');
 ?>
 
 Next you can use VAgg+ to group on the expression and count or enumerate the
@@ -126,7 +127,7 @@ TIPS FOR USING VIEWS PHP MODULE
 -------------------------------
 Use "Output code", not "Value code", as in the "Value code" area few Views
 results are available. Here are some examples of the syntax to use for various
-field types for access in the Output code text area. Note that to display
+field types for access in the "Output code" text area. Note that to display
 these values you need to put "echo" in front of the expression and place the
 <?php and ?> "brackets" around everything.
 
@@ -145,8 +146,8 @@ Rendered: $data->field_field_duration[0]['rendered']['#markup'];  //"Sun
 Raw: $data->field_field_industry[0]['raw']['tid']
 Rendered: $data->field_field_industry[0]['rendered']['#title']
 
-ACKNOWLEDGEMENT
----------------
+ACKNOWLEDGMENT
+--------------
 The UI of this module borrows heavily from Views Calc and the work by the
 authors and contributors done on that module is gratefully acknowledged.
 
