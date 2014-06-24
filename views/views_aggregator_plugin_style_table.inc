@@ -642,9 +642,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * The field will be rendered with appropriate CSS classes, without label.
    *
-   * NB: This is messy code. The lengths we have to go through for this are
-   * ridiculous. Patches welcome!
-   *
    * @param object $field_handler
    *   The views_handler_field_field object belonging to the View result field
    * @param int $row_num
@@ -657,9 +654,15 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * @return string
    *   The rendered value or FALSE, if the type of field is not supported.
+   *
+   * NB: This is messy code. The lengths we have to go through for this are
+   * ridiculous. Patches welcome!
+   * The way it currently works is to set the desired $raw_value on the
+   * associated entity and then render it via set_items() or field_view_field().
+   *
    */
   protected function render_from_raw($field_handler, $row_num = NULL, $raw_value = NULL) {
-    $field_name = $field_handler->options['id'];
+    $field_name = $real_field_name = $field_handler->options['id'];
     $field_alias = $field_handler->field_alias;
     $row = isset($row_num) ? $field_handler->view->result[$row_num] : reset($field_handler->view->result);
     $affect_view = isset($row_num);
@@ -668,6 +671,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // This happens for ViewsPHP fields and for Math Expressions.
       return !$row || $affect_view ? FALSE : (isset($raw_value) ? $raw_value : '?');
     }
+    // Note that when a 2nd copy of a field is used in the View, e.g.
+    // field_price_1, we refer back to the base field name, i.e. field_price
+    $last_underscore = strrpos($real_field_name, '_');
+    if ((int)drupal_substr($real_field_name, $last_underscore + 1)) {
+      $field_name = drupal_substr($real_field_name, 0, $last_underscore);
+    }
+
     $_field_data = $row->_field_data[$field_alias];
     if (isset($_field_data['entity']->{$field_name}) && is_scalar($_field_data['entity']->{$field_name})) {
       // E.g. when the $field_handler refers to a node property (rather than
@@ -704,8 +714,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       if ($affect_view) {
         // Next employ set_items() to re-render the $entity updated above,
         // placing both the 'raw' and 'rendered' versions in field_...[].
-        // set_items() calls field_views_field().
-        $row->{'field_' . $field_name} = $field_handler->set_items($row, $row_num);
+        // set_items() calls field_view_field() to render the value.
+        $row->{'field_' . $real_field_name} = $field_handler->set_items($row, $row_num);
         // Now set the current value back in case we have multiple displays, all
         // drawing from the same entity.
         if (isset($key)) {
