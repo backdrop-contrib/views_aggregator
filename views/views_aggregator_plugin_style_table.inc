@@ -437,7 +437,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   /**
    * Returns the raw, unrendered result at the intersection of column and row.
    *
-   * Should normally not be called, especially not for Math Expr. fields.
+   * Should normally not be called, especially not for Math Expr. or PHP fields.
    *
    * @param object $field_handler
    *   The handler associated with the result column being requested.
@@ -450,17 +450,29 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   the raw contents of the cell
    */
   private function get_cell_raw($field_handler, $result_row, $compressed = TRUE) {
-    // If the field_handler is views_handler_field_field, get_value() may start
-    // with cloning the entity pointed to by _field_data, most commonly:
-    // $result_row->_field_data['nid']['entity']
-    $value = $field_handler->get_value($result_row);
-    if (!isset($value)) {
-      // This may happen with a $field_handler like views_php_handler_field that
-      // doesn't have its value available until after rendering. Render it here.
-      $value = $field_handler->render($result_row);
+    
+    $field_name = isset($field_handler->definition['field_name']) ? 'field_' . $field_handler->definition['field_name'] : 'prop_or_math_or_php';
+    if (isset($result_row->$field_name)) {
+      $value = reset($result_row->$field_name);
+      $value = isset($value['raw']) ? $value['raw'] : $value;
     }
-    // get_value($result_row) may produce values like $value[0]['tid'] == 37
-    // or may have multiple subvalues like AddressFields:
+    elseif (isset($result_row->{$field_handler->field_alias})) {
+      $value = $result_row->{$field_handler->field_alias};
+    }
+    else {
+      return '';
+      /* @todo delete this
+      // If the field_handler is views_handler_field_field, get_value() may start
+      // with cloning the entity pointed to by _field_data, most commonly:
+      // $result_row->_field_data['nid']['entity']
+      $value = $field_handler->get_value($result_row);
+      if (!isset($value)) {
+        // This may happen with a $field_handler that doesn't have its value
+        // available until after rendering. Render it here.
+        $value = $field_handler->render($result_row);
+      }*/
+    }
+    // Deal with multiple subvalues like AddressFields:
     // $value[0]['country'] == 'AU'
     // $value[0]['postal_code'] = '3040' etc.
     //
@@ -517,10 +529,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $rendered_value = $new_values;
     }
     if ($rendered_value === FALSE && !$is_webform_value) {
-      // Get here for Views PHP fields and failed other fields, e.g. Geofield.
-      // Force setting of the result row cell, even if it doesn't exist.
       $rendered_value = is_array($new_values) ? implode($separator, $new_values) : $new_values;
-      $field_handler->view->result[$row_num]->{$field_handler->field_alias} = $rendered_value;
+      // @todo delete
+      //$field_handler->view->result[$row_num]->{'field_' . $field_name}[0]['raw']['value'] = $rendered_value;
     }
     return $this->rendered_fields[$row_num][$field_name] = $rendered_value;
   }
@@ -712,18 +723,20 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $entity->{$field_name}[$lang][0][$key] = $raw_value;
       }
       if ($affect_view) {
-        // Next employ set_items() to re-render the $entity updated above,
-        // placing both the 'raw' and 'rendered' versions in field_...[].
-        // set_items() calls field_view_field() to render the value.
-        $row->{'field_' . $real_field_name} = $field_handler->set_items($row, $row_num);
-        // Now set the current value back in case we have multiple displays, all
-        // drawing from the same entity.
+        // Next employ set_items() to re-render the $entity updated above.
+        // set_items() calls field_view_field() to render the value, applying
+        // rounding etc.
+        // It returns an array with raw and rendered components.
+        $raw_plus_rendered = $field_handler->set_items($row, $row_num);
+        // Now set the current value back on the entity in case we have multiple
+        // displays, all drawing from the same entity.
         if (isset($key)) {
           $entity->{$field_name}[$lang][0][$key] = $current_value;
         }
-        // The final step is to theme the rendered values.
-        // An alternative for the line below is:
-        // return $field_handler->advanced_render($row);
+        // The final step is to theme the rendered values. This includes
+        // token replacement and template theming.
+        // theme() calls $field_handler->advanced_render($row);
+        $row->{'field_' . $real_field_name} = $raw_plus_rendered;
         return $field_handler->theme($row);
       }
     }
@@ -893,6 +906,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       ($field_type == 'taxonomy_term_reference') ||
       is_a($field_handler, 'views_php_handler_field');
 
+    // Get the cells from the raw or rendered fields.
     // Note that raw data may contain HTML tags too, so always strip.
     $cell1 = strip_tags($this->get_cell($field_handler, $row1->num, $compare_rendered));
     $cell2 = strip_tags($this->get_cell($field_handler, $row2->num, $compare_rendered));
