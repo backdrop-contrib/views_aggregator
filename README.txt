@@ -112,6 +112,8 @@ Ref: http://work.lauralemay.com/samples/perl.html (for PERL, but quite good)
 
 LIMITATIONS
 -----------
+o If an aggregation function result does not display correctly, try changing the
+  field formatter. For example use "Plain text", rather than "Default".
 o Views-style table grouping, whereby the original table is split into smaller
   ones, interferes with this plugin, so is not available.
 o When you have an aggregated View AND a normal View attachment on the same
