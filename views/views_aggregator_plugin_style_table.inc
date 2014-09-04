@@ -451,7 +451,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   private function get_cell_raw($field_handler, $result_row, $compressed = TRUE) {
     
-    $field_name = isset($field_handler->definition['field_name']) ? 'field_' . $field_handler->definition['field_name'] : 'prop_or_math_or_php';
+    $field_name = isset($field_handler->options['id']) ? 'field_' . $field_handler->options['id'] : 'prop_or_math_or_php';
     if (isset($result_row->$field_name)) {
       $value = reset($result_row->$field_name);
       $value = isset($value['raw']) ? $value['raw'] : $value;
@@ -917,7 +917,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     else {
       // Compare numerically, i.e. "20 km" comes after "9.5 km".
-      // The double cast causes a readu up to the first non-number related char.
+      // The double cast causes a read up to the first non-number related char.
       $compare = (double)$cell1 < (double)$cell2 ? -1 : 1;
     }
     return ($this->order == 'asc') ? $compare : -$compare;
