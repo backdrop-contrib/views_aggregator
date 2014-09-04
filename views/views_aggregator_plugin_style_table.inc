@@ -461,16 +461,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     else {
       return '';
-      /* @todo delete this
-      // If the field_handler is views_handler_field_field, get_value() may start
-      // with cloning the entity pointed to by _field_data, most commonly:
-      // $result_row->_field_data['nid']['entity']
-      $value = $field_handler->get_value($result_row);
-      if (!isset($value)) {
-        // This may happen with a $field_handler that doesn't have its value
-        // available until after rendering. Render it here.
-        $value = $field_handler->render($result_row);
-      }*/
     }
     // Deal with multiple subvalues like AddressFields:
     // $value[0]['country'] == 'AU'
@@ -530,8 +520,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     if ($rendered_value === FALSE && !$is_webform_value) {
       $rendered_value = is_array($new_values) ? implode($separator, $new_values) : $new_values;
-      // @todo delete
-      //$field_handler->view->result[$row_num]->{'field_' . $field_name}[0]['raw']['value'] = $rendered_value;
     }
     return $this->rendered_fields[$row_num][$field_name] = $rendered_value;
   }
