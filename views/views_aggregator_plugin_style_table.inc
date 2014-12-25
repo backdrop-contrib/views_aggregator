@@ -21,6 +21,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $options = parent::option_definition();
     $options['totals_per_page'] = array('default' => TRUE);
     $options['totals_row_position'] = array('default' => array(1 => 0, 2 => 2));
+    $options['totals_row_class'] = array('default' => '');
     return $options;
   }
 
@@ -155,6 +156,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         2 => t('in the table footer'),
       ),
       '#default_value' => $this->options['totals_row_position'],
+      '#weight' => -1,
+    );
+    $form['totals_row_class'] = array(
+      '#title' => t('Column aggregation row class'),
+      '#type' => 'textfield',
+      '#description' => t('The CSS class to provide on the row containing the column aggreations.'),
+      '#default_value' => $this->options['totals_row_class'],
       '#weight' => -1,
     );
   }
@@ -457,6 +465,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $value = isset($value['raw']) ? $value['raw'] : $value;
     }
     elseif (isset($result_row->{$field_handler->field_alias})) {
+      // nid, node_title etc.
       $value = $result_row->{$field_handler->field_alias};
     }
     else {
@@ -648,8 +657,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   $raw_value outside the context of a View, without affecting any rows.
    * @param mixed $raw_value
    *   Compound or simple value. 
-   *   If NULL the row value of the field field is re-rendered using its
-   *   current (raw) value.
+   *   If NULL the row value of the field is re-rendered using its current
+   *   (raw) value.
    *
    * @return string
    *   The rendered value or FALSE, if the type of field is not supported.
@@ -657,8 +666,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * NB: This is messy code. The lengths we have to go through for this are
    * ridiculous. Patches welcome!
    * The way it currently works is to set the desired $raw_value on the
-   * associated entity and then render it via set_items() or field_view_field().
-   *
+   * associated entity and then render it via
+   *   set_items(), when a row_num is provided to write the value to
+   *   field_view_field(), otherwise
+   * set_items() internally also calls field_view_field()
    */
   protected function render_from_raw($field_handler, $row_num = NULL, $raw_value = NULL) {
     $field_name = $real_field_name = $field_handler->options['id'];
@@ -676,9 +687,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     if ((int)drupal_substr($real_field_name, $last_underscore + 1)) {
       $field_name = drupal_substr($real_field_name, 0, $last_underscore);
     }
-
     $_field_data = $row->_field_data[$field_alias];
-    if (isset($_field_data['entity']->{$field_name}) && is_scalar($_field_data['entity']->{$field_name})) {
+    if ($this->has_no_suitable_renderer($_field_data, $field_name)) {
       // E.g. when the $field_handler refers to a node property (rather than
       // a field) that does not have a renderer.
       return $affect_view ? ($_field_data['entity']->{$field_name} = $raw_value) : $raw_value;
@@ -737,6 +747,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     );
     $render_array = field_view_field($entity_type, $entity, $field_name, $display, $lang);
     return drupal_render($render_array);
+  }
+
+  protected function has_no_suitable_renderer($field_data, $field_name) {
+    if (!isset($field_data['entity']->{$field_name})) {
+      return TRUE;
+    }
+    return is_scalar($field_data['entity']->{$field_name});
   }
 
   /**
@@ -806,7 +823,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     $aggr_functions = $this->options['info'][$field_name][$is_column ? 'aggr_column' : 'aggr'];
     $aggr_function = is_array($aggr_functions) ? end($aggr_functions) : $aggr_functions;
-    $dont_render_functions = array('views_aggregator_count', 'views_aggregator_enumerate', 'views_aggregator_replace', 'views_aggregator_tally');
+    $dont_render_functions = array('views_aggregator_count', 'views_aggregator_enumerate', 'views_aggregator_enumerate_raw', 'views_aggregator_replace', 'views_aggregator_tally');
 
     return !in_array($aggr_function, $dont_render_functions);
   }
@@ -870,7 +887,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   The second aggregated group of result rows.
    *
    * @return int
-   *   The compare code indicating whether $row2 is smaller than (-1), equal
+   *   The compare code indicating whether $row1 is smaller than (-1), equal
    *   to (0) or greater than (1) $row2.
    */
   protected function compare_result_rows($row1, $row2) {

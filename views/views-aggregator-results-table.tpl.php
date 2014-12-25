@@ -39,7 +39,7 @@
         </tr>
       <?php endif ?>
       <?php if (($totals_row_position & 1) && !empty($totals)) : ?>
-        <tr>
+        <tr <?php if (!empty($totals_row_class)): ?>class="<?php print $totals_row_class; ?>"<?php endif ?>>
           <?php
             // Use order of the row fields to output the totals likewise.
             foreach (array_keys(reset($rows)) as $field):
@@ -65,7 +65,7 @@
   </tbody>
   <?php if (($totals_row_position & 2) && !empty($totals)) : ?>
     <tfoot>
-      <tr>
+      <tr <?php if (!empty($totals_row_class)): ?>class="<?php print $totals_row_class; ?>"<?php endif ?>>
         <?php
           // Use order of the row fields to output the totals likewise.
           foreach (array_keys(reset($rows)) as $field):

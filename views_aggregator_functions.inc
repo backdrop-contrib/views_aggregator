@@ -39,6 +39,10 @@ function views_aggregator_views_aggregation_functions_info() {
       'column' => NULL,
     ),
     'views_aggregator_enumerate' => array(
+      'group' => t('Enumerate (sort, no dupl.) *'),
+      'column' => t('Enumerate (sort, no dupl.) *'),
+    ),
+    'views_aggregator_enumerate_raw' => array(
       'group' => t('Enumerate *'),
       'column' => t('Enumerate *'),
     ),
@@ -212,6 +216,8 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
 /**
  * Aggregates a field group as the enumeration of its members.
  *
+ * The enumeration is sorted "naturally" and duplicates are removed.
+ *
  * @param array $groups
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
@@ -225,6 +231,50 @@ function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $
  *   an array of values, one for each group.
  */
 function views_aggregator_enumerate($groups, $field_handler, $separator_group, $separator_column) {
+  return _views_aggregator_enumerate($groups, $field_handler, $separator_group, $separator_column, TRUE, FALSE);
+}
+
+/**
+ * Aggregates a field group as the enumeration of its members.
+ *
+ * The enumeration retains the orignal order and does not remove duplicates.
+ *
+ * @param array $groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object $field_handler
+ *   the handler for the view column to find members of the group
+ * @param string $separator_group
+ *   the separator to use in group enumerations, defaults to '<br/>'
+ * @param string $separator_column
+ *   the separator to use for the column enumeration, defaults to '<br/>'
+ *
+ * @return array
+ *   an array of values, one for each group.
+ */
+function views_aggregator_enumerate_raw($groups, $field_handler, $separator_group, $separator_column) {
+  return _views_aggregator_enumerate($groups, $field_handler, $separator_group, $separator_column, FALSE, TRUE);
+}
+
+/**
+ * Aggregates a field group as the enumeration of its members.
+ *
+ * @param array $groups
+ *   an array of groups of rows, each group indexed by group value
+ * @param object $field_handler
+ *   the handler for the view column to find members of the group
+ * @param string $separator_group
+ *   the separator to use in group enumerations, defaults to '<br/>'
+ * @param string $separator_column
+ *   the separator to use for the column enumeration, defaults to '<br/>'
+ * @param bool $sort
+ *   whether or not to sort the enumeration
+ * @param bool $allow_duplicates
+ *   whether or not to remoe duplicates from the enumeration
+ *
+ * @return array
+ *   an array of values, one for each group.
+ */
+function _views_aggregator_enumerate($groups, $field_handler, $separator_group, $separator_column, $sort = TRUE, $allow_duplicates = FALSE) {
   $separator_group = empty($separator_group) ? '<br/>' : $separator_group;
   $separator_column = empty($separator_column) ? '<br/>' : $separator_column;
   $values = array('column' => array());
@@ -233,10 +283,10 @@ function views_aggregator_enumerate($groups, $field_handler, $separator_group, $
     foreach ($rows as $num => $row) {
       $cell = trim(views_aggregator_get_cell($field_handler, $num, TRUE));
       if (!empty($cell)) {
-        if (!in_array($cell, $cell_values)) {
+        if ($allow_duplicates || !in_array($cell, $cell_values)) {
           $cell_values[] = $cell;
         }
-        if (!in_array($cell, $values['column'])) {
+        if ($allow_duplicates || !in_array($cell, $values['column'])) {
           $values['column'][] = $cell;
         }
       }
@@ -245,15 +295,18 @@ function views_aggregator_enumerate($groups, $field_handler, $separator_group, $
       // After grouping the fields in the group no longer belong to one
       // entity. Cannot easily support hyper-linking, so switch it off.
       unset($field_handler->options['link_to_node']);
-      @sort($cell_values, SORT_NATURAL | SORT_FLAG_CASE);
+      if ($sort) {
+        @sort($cell_values, SORT_NATURAL | SORT_FLAG_CASE);
+      }
     }
     $values[$group] = implode($separator_group, $cell_values);
   }
-  @sort($values['column'], SORT_NATURAL | SORT_FLAG_CASE);
+  if ($sort) {
+    @sort($values['column'], SORT_NATURAL | SORT_FLAG_CASE);
+  }
   $values['column'] = implode($separator_column, $values['column']);
   return $values;
 }
-
 /**
  * Aggregates a field in the column aggregation row as a math. expression.
  *
