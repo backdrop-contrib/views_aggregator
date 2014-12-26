@@ -834,9 +834,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     $aggr_functions = $this->options['info'][$field_name][$is_column ? 'aggr_column' : 'aggr'];
     $aggr_function = is_array($aggr_functions) ? end($aggr_functions) : $aggr_functions;
-    $dont_render_functions = array('views_aggregator_count', 'views_aggregator_enumerate', 'views_aggregator_enumerate_raw', 'views_aggregator_replace', 'views_aggregator_tally');
-
-    return !in_array($aggr_function, $dont_render_functions);
+    $aggr_function_info = views_aggregator_get_aggregation_functions_info($aggr_function);
+    
+    // Aggregation functions are considered renderable unless set to FALSE.
+    return !isset($aggr_function_info['is_renderable']) || !empty($aggr_function_info['is_renderable']);
   }
 
   /**

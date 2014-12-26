@@ -14,13 +14,14 @@
  * Define your own group and column aggregation functions.
  *
  * @return array
- *   aggregation display names indexed by associated function id.
+ *   aggregation display names indexed by associated function name.
  */
 function hook_views_aggregation_functions_info() {
   $functions = array(
     'views_aggregator_variance' => array(
       'group' => t('Variance'),
       'column' => t('Variance'),
+      'is_renderable' => TRUE, // this is the default
     ),
   );
   return $functions;

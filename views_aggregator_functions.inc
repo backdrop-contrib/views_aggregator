@@ -33,22 +33,26 @@ function views_aggregator_views_aggregation_functions_info() {
     'views_aggregator_count' => array(
       'group' => t('Count (having regexp) *'),
       'column' => t('Count (having regexp) *'),
+      'is_renderable' => FALSE,
     ),
     'views_aggregator_first' => array(
       'group' => t('Display first member'),
       'column' => NULL,
     ),
-    'views_aggregator_enumerate' => array(
-      'group' => t('Enumerate (sort, no dupl.) *'),
-      'column' => t('Enumerate (sort, no dupl.) *'),
-    ),
     'views_aggregator_enumerate_raw' => array(
       'group' => t('Enumerate *'),
       'column' => t('Enumerate *'),
+      'is_renderable' => FALSE,
+    ),
+    'views_aggregator_enumerate' => array(
+      'group' => t('Enumerate (sort, no dupl.) *'),
+      'column' => t('Enumerate (sort, no dupl.) *'),
+      'is_renderable' => FALSE,
     ),
     'views_aggregator_replace' => array(
       'group' => t('Label (enter below) *'),
       'column' => t('Label (enter below) *'),
+      'is_renderable' => FALSE,
     ),
     'views_aggregator_maximum' => array(
       'group' => t('Maximum'),
@@ -73,6 +77,7 @@ function views_aggregator_views_aggregation_functions_info() {
     'views_aggregator_tally' => array(
       'group' => t('Tally members *'),
       'column' => NULL, // @todo t('Tally members *'),
+      'is_renderable' => FALSE,
     ),
     // This one is probably best last, because of token replacement.
     'views_aggregator_expression' => array(
