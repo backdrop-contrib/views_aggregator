@@ -65,6 +65,9 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
     // hook_views_aggregation_functions_info() implementations.
     $aggregation_functions = module_invoke_all('views_aggregation_functions_info');
 
+    // @todo sort by display name, rather than function name
+    ksort($aggregation_functions);
+
     // Let other modules alter the aggregation functions by implementing
     // hook_views_aggregation_functions_info_alter().
     drupal_alter('views_aggregation_functions_info', $aggregation_functions);

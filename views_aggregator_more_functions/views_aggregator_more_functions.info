@@ -1,0 +1,5 @@
+name = Views Aggregator Plus More Functions
+description = Adds more aggregation functions for Views Aggregator Plus
+package = Views
+dependencies[] = views_aggregator
+core = 7.x
