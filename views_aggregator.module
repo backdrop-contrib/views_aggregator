@@ -108,10 +108,10 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
     $vars['totals'] = $view->totals;
   }
   $vars['totals_row_position'] =
-    $view->style_plugin->options['totals_row_position'][1] +
-    $view->style_plugin->options['totals_row_position'][2];
+    $view->style_plugin->options['column_aggregation']['totals_row_position'][1] +
+    $view->style_plugin->options['column_aggregation']['totals_row_position'][2];
 
-  $vars['totals_row_class'] = $view->style_plugin->options['totals_row_class'];
+  $vars['totals_row_class'] = $view->style_plugin->options['column_aggregation']['totals_row_class'];
 
   if (!isset($view->row_index)) {
     // Have seen trouble when this is not set...

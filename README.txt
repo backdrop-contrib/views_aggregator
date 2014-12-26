@@ -93,6 +93,12 @@ There are no permissions or global module configurations.
 Views Aggregator Plus does not combine well with Views' native aggregation.
 So in the Advanced section (upper right) set "Use aggregation: No".
 
+Keep in mind that the process of grouping and aggregation as performed by this
+module is different from the Grouping option in Views. With Grouping in Views
+the total number of rows remains the same, but the rows are grouped in separate
+tables. With this module, the number of rows is reduced as they are grouped and
+collapsed, but the end result is always a single table.
+
 REGEXPS
 -------
 Some aggregation functions, like "Filter rows" and "Count" take a regular

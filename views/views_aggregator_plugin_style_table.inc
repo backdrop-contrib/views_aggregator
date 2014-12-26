@@ -19,9 +19,13 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function option_definition() {
     $options = parent::option_definition();
-    $options['totals_per_page'] = array('default' => TRUE);
-    $options['totals_row_position'] = array('default' => array(1 => 0, 2 => 2));
-    $options['totals_row_class'] = array('default' => '');
+    $options['column_aggregation'] = array(
+      'contains' => array(
+        'totals_per_page' => array('default' => TRUE),
+        'totals_row_position' => array('default' => array(1 => 0, 2 => 2)),
+        'totals_row_class' => array('default' => ''),
+      )
+    );
     return $options;
   }
 
@@ -137,33 +141,39 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         ),
       );
     }
-    $form['totals_per_page'] = array(
-      '#title' => t('Column aggregation row applies to:'),
-      '#type' => 'radios',
-      '#options' => array(
-        1 => t('the page shown, if a pager is enabled'),
-        0 => t('the entire result set, regardless of the page shown'),
-      ),
-      '#description' => t('If your View does not have a pager, then the two options are equivalent.'),
-      '#default_value' => $this->options['totals_per_page'],
+
+    $form['column_aggregation'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Column aggregation options'),
+      '#description' => t(''),
       '#weight' => -1,
     );
-    $form['totals_row_position'] = array(
+    $form['column_aggregation']['totals_row_position'] = array(
       '#title' => t('Column aggregation row position'),
       '#type' => 'checkboxes',
       '#options' => array(
         1 => t('in the table header'),
         2 => t('in the table footer'),
       ),
-      '#default_value' => $this->options['totals_row_position'],
-      '#weight' => -1,
+      '#default_value' => $this->options['column_aggregation']['totals_row_position'],
     );
-    $form['totals_row_class'] = array(
+    $form['column_aggregation']['totals_per_page'] = array(
+      '#title' => t('Column aggregation row applies to:'),
+      '#type' => 'radios',
+      '#options' => array(
+        1 => t('the page shown, if a pager is enabled'),
+        0 => t('the entire result set'),
+      ),
+      '#description' => t('If your view does not have a pager, then the two options are equivalent.'),
+      '#default_value' => $this->options['column_aggregation']['totals_per_page'],
+      '#weight' => 1,
+    );
+    $form['column_aggregation']['totals_row_class'] = array(
       '#title' => t('Column aggregation row class'),
       '#type' => 'textfield',
       '#description' => t('The CSS class to provide on the row containing the column aggreations.'),
-      '#default_value' => $this->options['totals_row_class'],
-      '#weight' => -1,
+      '#default_value' => $this->options['column_aggregation']['totals_row_class'],
+      '#weight' => 2,
     );
   }
 
@@ -234,7 +244,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     $functions = $this->collect_aggregation_functions();
 
-    $show_global_totals_with_pager = empty($this->options['totals_per_page']) && !empty($this->view->total_rows);
+    $show_global_totals_with_pager = empty($this->options['column_aggregation']['totals_per_page']) && !empty($this->view->total_rows);
 
     if ($show_global_totals_with_pager) {
       $view_without_pager = $this->execute_view_without_pager($this->view, $this->view->current_display);
