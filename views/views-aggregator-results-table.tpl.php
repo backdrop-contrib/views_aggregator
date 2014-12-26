@@ -14,6 +14,7 @@
  * - $header_classes: An array of header classes keyed by field id.
  * - $fields: An array of CSS IDs to use for each field id.
  * - $classes: A class or classes to apply to the table, based on settings.
+ * - $totals_row_class: A class to apply to the aggregation row
  * - $row_classes: An array of classes to apply to each row, indexed by row
  *   number. This matches the index in $rows.
  * - $rows: An array of row items. Each row is an array of content.
@@ -37,7 +38,7 @@
             </th>
           <?php endforeach ?>
         </tr>
-      <?php endif ?>
+      <?php endif; ?>
       <?php if (($totals_row_position & 1) && !empty($totals)) : ?>
         <tr <?php if (!empty($totals_row_class)): ?>class="<?php print $totals_row_class; ?>"<?php endif ?>>
           <?php
@@ -51,18 +52,18 @@
         </tr>
       <?php endif; ?>
     </thead>
-  <tbody>
-    <?php foreach ($rows as $r => $row): ?>
-      <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"<?php endif ?>>
-        <?php foreach ($row as $field => $content): ?>
-          <td <?php if (!empty($field_classes[$field][$r])): ?>class="<?php print $field_classes[$field][$r]; ?>"<?php endif ?>
-              <?php if (!empty($field_attributes[$field][$r])): ?><?php print drupal_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
-            <?php print $content; ?>
-          </td>
-        <?php endforeach ?>
-      </tr>
-    <?php endforeach ?>
-  </tbody>
+    <tbody>
+      <?php foreach ($rows as $r => $row): ?>
+        <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"<?php endif ?>>
+          <?php foreach ($row as $field => $content): ?>
+            <td <?php if (!empty($field_classes[$field][$r])): ?>class="<?php print $field_classes[$field][$r]; ?>"<?php endif ?>
+                <?php if (!empty($field_attributes[$field][$r])): ?><?php print drupal_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
+              <?php print $content; ?>
+            </td>
+          <?php endforeach ?>
+        </tr>
+      <?php endforeach ?>
+    </tbody>
   <?php if (($totals_row_position & 2) && !empty($totals)) : ?>
     <tfoot>
       <tr <?php if (!empty($totals_row_class)): ?>class="<?php print $totals_row_class; ?>"<?php endif ?>>

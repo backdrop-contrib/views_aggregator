@@ -358,8 +358,15 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
  *   an empty array
  */
 function views_aggregator_first($groups, $field_handler) {
-  // This is the default operation anyway, so nothing to do.
-  return array();
+  // This is the default operation, so nothing to do, except for Webforms.
+  $values = array();
+  if (is_a($field_handler, 'webform_handler_field_submission_data')) {
+    foreach ($groups as $group => $rows) {
+      $values[$group] = views_aggregator_get_cell($field_handler, key($rows));
+    }
+    //$values['column'] = $values[key($groups)];
+  }
+  return $values;
 }
 
 /**
