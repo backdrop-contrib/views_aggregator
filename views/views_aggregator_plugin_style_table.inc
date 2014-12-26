@@ -319,8 +319,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $field_handlers = $this->view->field;
     // Find the one column to group by and execute the grouping.
     foreach ($this->options['info'] as $field_name => $options) {
-      if (!empty($options['has_aggr']) && in_array('views_aggregator_group_and_compress', $options['aggr'])) {
-        $groups = views_aggregator_group_and_compress($this->view->result, $field_handlers[$field_name]);
+      if (!empty($options['has_aggr']) && in_array('views_aggregator_group_and_compress', $options['aggr'], FALSE)) {
+        $groups = views_aggregator_group_and_compress($this->view->result, $field_handlers[$field_name], $options['aggr_par']);
         break;
       }
     }

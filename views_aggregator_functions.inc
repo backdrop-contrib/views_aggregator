@@ -131,17 +131,32 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
  *   the result rows as they appear on the view object
  * @param object $field_handler
  *   the handler for the view column to group rows on
+ * @param string $case
+ *   whether group-inclusion is case-sensitive (the default)
  *
  * @return array
  *   an array of groups, keyed by group value first and row number second.
  */
-function views_aggregator_group_and_compress($view_results, $field_handler) {
+function views_aggregator_group_and_compress($view_results, $field_handler, $case = 'case-sensitive') {
   $groups = array();
+  $is_ci = (strcmp($case, 'case-insensitive') === 0) || ($case == t('case-insensitive'));
   foreach ($view_results as $num => $row) {
     // Compression takes place on the rendered values. Two hyperlinks with the
     // same display texts but different hrefs will end up in different groups.
     $group_value = views_aggregator_get_cell($field_handler, $num, TRUE);
-    $groups[$group_value][$num] = $row;
+    if ($is_ci) {
+      $is_set = FALSE;
+      foreach (array_keys($groups) as $existing_group) {
+        if (strcasecmp($group_value, $existing_group) === 0) {
+          $groups[$existing_group][$num] = $row;
+          $is_set = TRUE;
+          break;
+        }
+      }
+    }
+    if (empty($is_set)) {
+      $groups[$group_value][$num] = $row;
+    }
   }
   return $groups;
 }

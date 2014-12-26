@@ -99,6 +99,20 @@ the total number of rows remains the same, but the rows are grouped in separate
 tables. With this module, the number of rows is reduced as they are grouped and
 collapsed, but the end result is always a single table.
 
+FUNCTION PARAMETERS
+-------------------
+Functions marked with an asterisk take an optional parameter.
+
+"Group and Compress" takes an optional keyword 'case-insensitive' (in English or
+the translated language on your site) to perform grouping in a case-insensitive
+manner. The default is case-sensitive.
+
+"Range", "Tally members" and the two "Enumerate" functions use their parameter
+to specify the separator. The default is an HTML line-break, <br/>, for "Tally"
+and "Enumerate" and ' - ' for "Range".
+
+"Filter rows" and "Count" take a regular expression. This is explained below.
+
 REGEXPS
 -------
 Some aggregation functions, like "Filter rows" and "Count" take a regular
