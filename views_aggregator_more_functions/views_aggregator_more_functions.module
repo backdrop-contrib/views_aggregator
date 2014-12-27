@@ -21,16 +21,16 @@ function views_aggregator_more_functions_views_aggregation_functions_info() {
 }
 
 /**
- * Replace the cell by the group sequence number (row number).
+ * Replace the cell by the group sequence number (resulting table row number).
  *
  * @param array $groups
  * @param object $field_handler, not used
- * @param int $start_value, at which to start the sequence, defaults to 1
+ * @param int $start_value, # at which to start the sequence, defaults to 1
  * @return values
  */
-function views_aggregator_group_seq_number($groups, $field_handler, $start_value) {
+function views_aggregator_group_seq_number($groups, $field_handler = NULL, $start_value = NULL) {
   $values = array();
-  $count = empty($start_value) ? 1 : (int)$start_value;
+  $count = (!isset($start_value) || $start_value == '') ? 1 : (int) $start_value;
   foreach ($groups as $group => $rows) {
     $values[$group] = $count++;
   }

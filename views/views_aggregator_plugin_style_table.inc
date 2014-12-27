@@ -24,6 +24,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         'totals_per_page' => array('default' => TRUE),
         'totals_row_position' => array('default' => array(1 => 0, 2 => 2)),
         'totals_row_class' => array('default' => ''),
+        'precision' => array('default' => 2),
       )
     );
     return $options;
@@ -168,12 +169,20 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       '#default_value' => $this->options['column_aggregation']['totals_per_page'],
       '#weight' => 1,
     );
+    $form['column_aggregation']['precision'] = array(
+      '#title' => t('Column aggregation row default numeric precision'),
+      '#type' => 'textfield',
+      '#size' => 3,
+      '#description' => t('The number of decimals to use for column aggregations whose precisions are not defined elsewhere -- for example aggregations on Views PHP numbers.'),
+      '#default_value' => $this->options['column_aggregation']['precision'],
+      '#weight' => 2,
+    );
     $form['column_aggregation']['totals_row_class'] = array(
       '#title' => t('Column aggregation row class'),
       '#type' => 'textfield',
       '#description' => t('The CSS class to provide on the row containing the column aggreations.'),
       '#default_value' => $this->options['column_aggregation']['totals_row_class'],
-      '#weight' => 2,
+      '#weight' => 3,
     );
   }
 
@@ -437,7 +446,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       // Bit of a hack for "Webform submission data: Value(...)" and
       // "Global: Math expression" fields... Always pick up the rendered fields,
       // as it seems that's all we can get!
-      if ($render || is_a($field_handler, 'webform_handler_field_submission_data')) {
+      if ($render || is_a($field_handler, 'webform_handler_field_submission_data') || is_a($field_handler, 'views_php_handler_field')) {
         return $this->rendered_fields[$row_num][$field_name];
       }
       if (is_a($field_handler, 'views_handler_field_math')) {
@@ -636,6 +645,14 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         // Note: substr may not be locale safe.
         $value .= $field_handler->options['decimal'] . substr($remainder, 2);
       }
+    }
+    elseif (is_float($raw_value)) {
+      $precision = isset($this->options['column_aggregation']['precision'])
+       ? (int) $this->options['column_aggregation']['precision']
+       : (int) variable_get('views_aggregator_def_precision', 2);
+      $decimal = variable_get('views_aggregator_def_decimal'); // '.'
+      $separator = variable_get('views_aggregator_def_separator'); // ','
+      $value = number_format($raw_value, $precision, $decimal, $separator);
     }
     else {
       $value = $raw_value;
