@@ -54,7 +54,7 @@ function views_aggregator_views_api() {
  *   The name of the desired function or NULL to retrieve an array of functions.
  *
  * @return array
- *   An array of aggregation function parameters.
+ *   An array of aggregation function info.
  */
 function views_aggregator_get_aggregation_functions_info($name = NULL) {
 

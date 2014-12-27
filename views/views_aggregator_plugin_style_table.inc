@@ -883,9 +883,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // $this->pre_render().
     // This is here predominantly to avoid notices from ViewsPHP, but also
     // makes normal column sorting more efficient by not adding any unnecessary
-    // WHERE-clauses.
-    if (!is_a($this->view->field[$sort], 'views_handler_field_math') &&
-      empty($this->options['info'][$sort]['has_aggr'])) {
+    // WHERE-clauses, if paging is OFF.
+    // @todo Refine this logic
+    if (!is_a($this->view->field[$sort], 'views_handler_field_math')
+      /* && empty($this->options['info'][$sort]['has_aggr'])*/) {
       $this->view->field[$sort]->click_sort($this->order);
     }
   }
@@ -957,16 +958,22 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   $view->style_plugin->rendered_fields
    */
   protected function execute_view_without_pager($view_with_pager, $display_id = NULL) {
-    // This call exports the Views configuration, without any results attached.
-    // We're doing it this way, because none of the below work after clone_view().
-    // $view_without_pager->display['default']->handler->options['pager']['type'] = 'none';
-    // $view_without_pager->display[$display_id]->handler->options['pager']['type'] = 'none';
-    // $view_without_pager->display_handler->default_display->options['pager']['type'] = 'none';
-    // The code below is based on view::copy()
+    // Apply the filters so the results reflect accurately.
+    $this->apply_exposed_filters($view_with_pager);
+
+    $clone = $view_with_pager->clone_view();
+    $id = empty($clone->display[$display_id]->display_options['pager']) ? 'default' : $display_id;
+    $clone->display[$id]->display_options['pager']['type'] = 'none';
+    
+    $clone->is_temp_views_aggregator = TRUE;
+    $clone->execute($display_id);
+    return $clone;
+/*
+    //  Alternative code below is based on view::copy()
     $code = $view_with_pager->export();
     $code_without_pagers = str_replace(
       "display_options['pager']['type'] = ",
-      "display_options['pager']['type'] = 'none'; //", $code/*, $num_pagers*/);
+      "display_options['pager']['type'] = 'none'; //", $code);
 
     // This statement creates a View object by the name of $view.
     eval($code_without_pagers);
@@ -979,10 +986,24 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
 
     // As this is a copy, let's keep caching behaviour the same as the original.
 
-    // Execute the display and render it.
-    $view->render($display_id);
-
+    // Execute the display.
+    $view->execute($display_id); // may have to be: $view->render($display_id);
     return $view;
+*/
+  }
+
+  /**
+   * Apply the exposed filters to the view so we get the correct result set.
+   *
+   * @param object $view
+   *   A view object.
+   */
+  protected function apply_exposed_filters(&$view) {
+    $filters = $view->display_handler->display->handler->handlers['filter'];
+    // Loop through the filters and UNexpose them.
+    foreach ($filters as $filter_handler) {
+      $filter_handler->options['exposed'] = FALSE;
+    }
   }
 
 }

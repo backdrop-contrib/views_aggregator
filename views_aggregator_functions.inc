@@ -319,7 +319,9 @@ function _views_aggregator_enumerate($groups, $field_handler, $separator_group, 
         @sort($cell_values, SORT_NATURAL | SORT_FLAG_CASE);
       }
     }
-    $values[$group] = implode($separator_group, $cell_values);
+    if ($group != 'column') {
+      $values[$group] = implode($separator_group, $cell_values);
+    }
   }
   if ($sort) {
     @sort($values['column'], SORT_NATURAL | SORT_FLAG_CASE);
