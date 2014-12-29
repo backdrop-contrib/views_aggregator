@@ -27,8 +27,8 @@ function views_aggregator_views_aggregation_functions_info() {
     /* Regular aggregation functions start here, in alphabetical order */
 
     'views_aggregator_average' => array(
-      'group' => t('Average'),
-      'column' => t('Average'),
+      'group' => t('Average *'),
+      'column' => t('Average *'),
     ),
     'views_aggregator_count' => array(
       'group' => t('Count (having regexp) *'),
@@ -108,7 +108,7 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
     return;
   }
   if (preg_match('/[a-zA-Z0-9_]+/', $regexp)) {
-    // Interprt omitted brace chars in the regexp as a verbatim text match.
+    // Interpret omitted brace chars in the regexp as a verbatim text match.
     $regexp = "/$regexp/";
   }
   foreach ($views_plugin_style->view->result as $num => $row) {
@@ -139,7 +139,7 @@ function views_aggregator_row_filter($views_plugin_style, $field_handler, $regex
  */
 function views_aggregator_group_and_compress($view_results, $field_handler, $case = 'case-sensitive') {
   $groups = array();
-  $is_ci = (strcmp($case, 'case-insensitive') === 0) || ($case == t('case-insensitive'));
+  $is_ci = (strcasecmp($case, 'case-insensitive') === 0) || ($case == t('case-insensitive'));
   foreach ($view_results as $num => $row) {
     // Compression takes place on the rendered values. Two hyperlinks with the
     // same display texts but different hrefs will end up in different groups.
@@ -158,6 +158,26 @@ function views_aggregator_group_and_compress($view_results, $field_handler, $cas
       $groups[$group_value][$num] = $row;
     }
   }
+  // Caution: experiment!
+  if (FALSE) {
+    // For each group remove cells that are identical to the the ones above
+    // them in the same group.
+    foreach ($groups as $group_value => &$rows) {
+      $first_row = NULL;
+      foreach ($rows as $num => &$row) {
+        if (!isset($first_row)) {
+          $first_row = $row;
+        }
+        else {
+          foreach ((array)$row as $field_name => $cell) {
+            if ($field_name != '_field_data' && $cell == $first_row->{$field_name}) {
+              unset($row->{$field_name});
+            }
+          }
+        }
+      }
+    }
+  }
   return $groups;
 }
 
@@ -168,11 +188,15 @@ function views_aggregator_group_and_compress($view_results, $field_handler, $cas
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
  *   the handler for the view column to find the minimum in
+ * @param int $precision_group
+ *   the number of decimals, if specified
+ * @param int $precision_column
+ *   the number of decimals, if specified
  *
  * @return array
  *   an array of values, one for each group and one for the column.
  */
-function views_aggregator_average($groups, $field_handler) {
+function views_aggregator_average($groups, $field_handler, $precision_group, $precision_column) {
   $values = array();
   $sum_column = 0.0;
   $count_column = 0;
@@ -187,11 +211,13 @@ function views_aggregator_average($groups, $field_handler) {
         $count++;
       }
     }
-    $values[$group] = ($count == 0) ? 0.0 : $sum / $count;
+    $average = ($count == 0) ? 0.0 : $sum / $count;
+    $values[$group] = empty($precision_group) ? $average : number_format($average, $precision_group, '.', '');
     $sum_column += $sum;
     $count_column += $count;
   }
-  $values['column'] = ($count_column == 0) ? 0.0 : $sum_column / $count_column;
+  $average_column = ($count_column == 0) ? 0.0 : $sum_column / $count_column;
+  $values['column'] = empty($precision_column) ? $average_column : number_format($average_column, $precision_column, '.', '');
   return $values;
 }
 

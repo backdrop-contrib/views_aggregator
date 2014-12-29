@@ -578,8 +578,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // require a different approach using format_numeric().
     $rendered_values = array();
     foreach ($new_values as $new_value) {
-      if (is_a($field_handler, 'views_handler_field_field')) {
+      if ($this->is_standard_field($field_handler)) {
         $rendered_values[] = $this->render_from_raw($field_handler, $row_num, $new_value);
+      }
+      elseif ($this->is_commerce_currency_amount($field_handler, $row_num)) {
+        $rendered_values[] = $this->render_from_raw_scalar($field_handler, $row_num, $new_value);
       }
       else {
         // If $new_value is not a number, this tends to return it verbatim.
@@ -588,6 +591,57 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     $rendered_value = implode(empty($separator) ? ' - ' : $separator, $rendered_values);
     return is_array($rendered_value) ? drupal_render($rendered_value) : $rendered_value;
+  }
+
+  /**
+   * Returns whether the supplied field is a standard Views field.
+   *
+   * @param object $field_handler
+   *   The views_handler_field_field object belonging to the View result field
+   *
+   * @return bool
+   */
+  protected function is_standard_field($field_handler) {
+    return is_a($field_handler, 'views_handler_field_field');
+  }
+  
+  protected function is_commerce_currency_amount($field_handler, $row_num) {
+    //$field_alias = $field_handler->field_alias;
+    //$is_scalar = is_scalar($field_handler->view->result[$row_num]->$field_alias);
+    $row = isset($row_num) ? $field_handler->view->result[$row_num] : reset($field_handler->view->result);
+    $currency_code = $field_handler->get_value($row, 'currency_code');
+    return is_string($currency_code) && !empty($field_handler->aliases['currency_code']);
+  }
+
+  /**
+   * Render a Commerce amount passed in cents, formatted with currency.
+   *
+   * The field will be rendered with appropriate CSS classes, without label.
+   *
+   * @param object $field_handler
+   *   The views_handler_field_field object belonging to the View result field
+   * @param int $row_num
+   *   The view result row number to change; use NULL if you do not wish to
+   *   affect the view but just render the raw_value.
+   * @param int $raw_value
+   *   Amount in cents
+   *   If NULL the row value of the field is re-rendered using its current
+   *   (raw) value.
+   */
+  protected function render_from_raw_scalar($field_handler, $row_num, $raw_value) {
+    $affect_view = isset($row_num);
+    $row_num = (int) $row_num;
+    $row = &$field_handler->view->result[$row_num];
+    if (isset($raw_value)) {
+      $field_alias = $field_handler->field_alias;
+      $orig_value = $row->$field_alias;
+      $row->$field_alias = $raw_value;
+    }
+    $rendered_value = $field_handler->render($row);
+    if (!$affect_view && isset($orig_value)) {
+      $row->$field_alias = $orig_value;
+    }
+    return $rendered_value;
   }
 
   /**
@@ -648,8 +702,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     elseif (is_float($raw_value)) {
       $precision = isset($this->options['column_aggregation']['precision'])
-       ? (int) $this->options['column_aggregation']['precision']
-       : (int) variable_get('views_aggregator_def_precision', 2);
+        ? (int) $this->options['column_aggregation']['precision']
+        : (int) variable_get('views_aggregator_def_precision', 2);
       $decimal = variable_get('views_aggregator_def_decimal'); // '.'
       $separator = variable_get('views_aggregator_def_separator'); // ','
       $value = number_format($raw_value, $precision, $decimal, $separator);

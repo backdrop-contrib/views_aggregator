@@ -104,8 +104,11 @@ FUNCTION PARAMETERS
 Functions marked with an asterisk take an optional parameter.
 
 "Group and Compress" takes an optional keyword 'case-insensitive' (in English or
-the translated language on your site) to perform grouping in a case-insensitive
-manner. The default is case-sensitive.
+in the translated language on your site) to perform grouping in a
+case-insensitive manner. The default is case-sensitive.
+
+"Average" takes an optional precision: the number of decimals to round to after
+calculating the average.
 
 "Range", "Tally members" and the two "Enumerate" functions use their parameter
 to specify the separator. The default is an HTML line-break, <br/>, for "Tally"
