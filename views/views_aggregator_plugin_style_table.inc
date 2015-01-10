@@ -581,7 +581,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       if ($this->is_standard_field($field_handler)) {
         $rendered_values[] = $this->render_from_raw($field_handler, $row_num, $new_value);
       }
-      elseif ($this->is_commerce_currency_amount($field_handler, $row_num)) {
+      elseif ($this->is_commerce_currency_amount($field_handler)) {
         $rendered_values[] = $this->render_from_raw_scalar($field_handler, $row_num, $new_value);
       }
       else {
@@ -605,12 +605,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     return is_a($field_handler, 'views_handler_field_field');
   }
   
-  protected function is_commerce_currency_amount($field_handler, $row_num) {
+  protected function is_commerce_currency_amount($field_handler) {
     //$field_alias = $field_handler->field_alias;
     //$is_scalar = is_scalar($field_handler->view->result[$row_num]->$field_alias);
-    $row = isset($row_num) ? $field_handler->view->result[$row_num] : reset($field_handler->view->result);
-    $currency_code = $field_handler->get_value($row, 'currency_code');
-    return is_string($currency_code) && !empty($field_handler->aliases['currency_code']);
+    return !empty($field_handler->aliases['currency_code']);
   }
 
   /**
@@ -700,7 +698,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $value .= $field_handler->options['decimal'] . substr($remainder, 2);
       }
     }
-    elseif (is_float($raw_value)) {
+    elseif (!is_int($raw_value)) {
       $precision = isset($this->options['column_aggregation']['precision'])
         ? (int) $this->options['column_aggregation']['precision']
         : (int) variable_get('views_aggregator_def_precision', 2);
