@@ -6,7 +6,7 @@
  */
 
 /**
- * Implements hook_views_aggregatrion_functions_info().
+ * Implements hook_views_aggregation_functions_info().
  */
 function views_aggregator_more_functions_views_aggregation_functions_info() {
   $functions = array(

@@ -606,13 +606,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   }
   
   protected function is_commerce_currency_amount($field_handler) {
-    //$field_alias = $field_handler->field_alias;
-    //$is_scalar = is_scalar($field_handler->view->result[$row_num]->$field_alias);
     return !empty($field_handler->aliases['currency_code']);
   }
 
   /**
-   * Render a Commerce amount passed in cents, formatted with currency.
+   * Mainly to render Commerce amounts passed in cents, formatted with currency.
    *
    * The field will be rendered with appropriate CSS classes, without label.
    *
@@ -699,7 +697,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       }
     }
     elseif (!is_int($raw_value)) {
-      $precision = isset($this->options['column_aggregation']['precision'])
+      $precision = isset($this->options['column_aggregation']['precision']) && $this->options['column_aggregation']['precision'] != ''
         ? (int) $this->options['column_aggregation']['precision']
         : (int) variable_get('views_aggregator_def_precision', 2);
       $decimal = variable_get('views_aggregator_def_decimal'); // '.'
@@ -745,6 +743,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *
    * NB: This is messy code. The lengths we have to go through for this are
    * ridiculous. Patches welcome!
+   *
    * The way it currently works is to set the desired $raw_value on the
    * associated entity and then render it via
    *   set_items(), when a row_num is provided to write the value to
@@ -794,7 +793,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
           $key = key($entity->{$field_name}[$lang][0]);
           // Cannot override 'tid' with non-numeric value. But like 'value',
           // 'tid' may be set in case of min, max, most frequent etc.
-          if ($affect_view && $key != 'value' && !($key == 'tid' && is_numeric($raw_value))) {
+          // 'amount' is to allow the setting of Drupal Commerce prices.
+          if ($affect_view && $key != 'value' && $key != 'amount' && !($key == 'tid' && is_numeric($raw_value))) {
             return FALSE;
           }
         }
