@@ -107,6 +107,15 @@ function views_aggregator_get_cell($field_handler, $row_num, $rendered = FALSE) 
 function template_preprocess_views_aggregator_results_table(&$vars) {
   $view = $vars['view'];
 
+  $vars['grouping_field'] = '';
+  foreach ($view->style_plugin->options['info'] as $field_name => $info) {
+    if (!empty($info['has_aggr']) && !empty($info['aggr']['views_aggregator_group_and_compress'])) {
+      $vars['grouping_field'] = $field_name;
+      break;
+    }
+  }
+  $vars['grouping_field_class'] = $view->style_plugin->options['group_aggregation']['grouping_field_class'];
+
   if (!empty($view->totals) && array_filter($view->totals) != array()) {
     $vars['totals'] = $view->totals;
   }

@@ -19,6 +19,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function option_definition() {
     $options = parent::option_definition();
+    $options['group_aggregation'] = array(
+      'contains' => array(
+        'grouping_field_class' => array('default' => ''),
+      )
+    );
     $options['column_aggregation'] = array(
       'contains' => array(
         'totals_per_page' => array('default' => TRUE),
@@ -143,10 +148,21 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       );
     }
 
+    $form['group_aggregation'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Group aggregation options'),
+      '#weight' => -2,
+    );
+    $form['group_aggregation']['grouping_field_class'] = array(
+      '#title' => t('Grouping field cell class'),
+      '#type' => 'textfield',
+      '#description' => t('The CSS class to provide on each cell of the column belonging to the field that is being <em>Grouped and compressed</em>.'),
+      '#default_value' => $this->options['group_aggregation']['grouping_field_class'],
+    );
+
     $form['column_aggregation'] = array(
       '#type' => 'fieldset',
       '#title' => t('Column aggregation options'),
-      '#description' => t(''),
       '#weight' => -1,
     );
     $form['column_aggregation']['totals_row_position'] = array(
@@ -159,7 +175,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       '#default_value' => $this->options['column_aggregation']['totals_row_position'],
     );
     $form['column_aggregation']['totals_per_page'] = array(
-      '#title' => t('Column aggregation row applies to:'),
+      '#title' => t('Column aggregation row applies to'),
       '#type' => 'radios',
       '#options' => array(
         1 => t('the page shown, if a pager is enabled'),
@@ -180,7 +196,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $form['column_aggregation']['totals_row_class'] = array(
       '#title' => t('Column aggregation row class'),
       '#type' => 'textfield',
-      '#description' => t('The CSS class to provide on the row containing the column aggreations.'),
+      '#description' => t('The CSS class to provide on the row containing the column aggregations.'),
       '#default_value' => $this->options['column_aggregation']['totals_row_class'],
       '#weight' => 3,
     );
@@ -610,7 +626,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   }
 
   /**
-   * Mainly to render Commerce amounts passed in cents, formatted with currency.
+   * Render a Commerce amount passed in cents, formatted with currency.
    *
    * The field will be rendered with appropriate CSS classes, without label.
    *
@@ -697,7 +713,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       }
     }
     elseif (!is_int($raw_value)) {
-      $precision = isset($this->options['column_aggregation']['precision']) && $this->options['column_aggregation']['precision'] != ''
+      $precision = isset($this->options['column_aggregation']['precision'])
         ? (int) $this->options['column_aggregation']['precision']
         : (int) variable_get('views_aggregator_def_precision', 2);
       $decimal = variable_get('views_aggregator_def_decimal'); // '.'
