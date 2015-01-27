@@ -712,7 +712,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         $value .= $field_handler->options['decimal'] . substr($remainder, 2);
       }
     }
-    elseif (!is_int($raw_value)) {
+    elseif (is_float($raw_value)) {
       $precision = isset($this->options['column_aggregation']['precision'])
         ? (int) $this->options['column_aggregation']['precision']
         : (int) variable_get('views_aggregator_def_precision', 2);
