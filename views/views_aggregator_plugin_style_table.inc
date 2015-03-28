@@ -19,6 +19,11 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   public function option_definition() {
     $options = parent::option_definition();
+    $options['general'] = array(
+      'contains' => array(
+        'use_field_handler' => array('default' => FALSE, 'bool' => TRUE),
+      ),
+    );
     $options['group_aggregation'] = array(
       'contains' => array(
         'grouping_field_class' => array('default' => ''),
@@ -147,6 +152,18 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         ),
       );
     }
+    $form['general'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('General aggregation options'),
+      '#weight' => -3,
+    );
+    $form['general']['use_field_handler'] = array(
+      '#title' => '<strong>' . t('Use advanced numeric handler') . '</strong>',
+      '#type' => 'checkbox',
+      '#description' => t('If checked, try to use the advanced options instead of simple numeric rendering.') . '<br/>' .
+        t('<em>Warning:</em> may not work with some numeric fields or settings, so verify that the results are as expected after enabling this option.'),
+      '#default_value' => $this->options['general']['use_field_handler'],
+    );
 
     $form['group_aggregation'] = array(
       '#type' => 'fieldset',
@@ -584,6 +601,22 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    *   The rendered new value or FALSE if the value could not be rendered.
    */
   protected function render_new_value($field_handler, $row_num, $new_values, $separator) {
+
+    if (!empty($this->options['general']['use_field_handler'])) {
+
+      // Need this test as views_handler_field_field::get_value() drastically
+      // overrides views_handler_field::get_value() and will expect an entity
+      // to be present in $field_handler->view->result[$row_num]->_field_data 
+      // and attempt to clone it, which results in WSOD when not there.
+      // rendering this way is also no good for views_php_handler_fields and
+      // views_handler_field_math fields.
+      if ($this->is_numeric_field($field_handler)) {
+        return $field_handler->render((object) array(
+          $field_handler->field_alias => $new_values
+        ));
+      }
+    }
+
     $new_values = is_array($new_values) ? $new_values : array($new_values);
     // If the field_handler belongs to an entity Field (as in the field module),
     // then we call render_from_raw(), which uses the attached parent entity to
@@ -619,6 +652,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   protected function is_standard_field($field_handler) {
     return is_a($field_handler, 'views_handler_field_field');
+  }
+
+  protected function is_numeric_field($field_handler) {
+    return is_a($field_handler, 'views_handler_field_numeric');
   }
   
   protected function is_commerce_currency_amount($field_handler) {
