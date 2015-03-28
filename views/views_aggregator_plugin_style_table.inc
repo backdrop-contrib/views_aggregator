@@ -655,7 +655,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
   }
 
   protected function is_numeric_field($field_handler) {
-    return is_a($field_handler, 'views_handler_field_numeric');
+    return is_a($field_handler, 'views_handler_field_numeric') &&
+      !is_a($field_handler, 'views_handler_field_math');
   }
   
   protected function is_commerce_currency_amount($field_handler) {
