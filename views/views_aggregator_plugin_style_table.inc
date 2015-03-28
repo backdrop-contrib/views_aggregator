@@ -769,7 +769,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     if (!empty($field_handler->options['format_plural']) && ($value != 0 || !$field_handler->options['empty_zero'])) {
       $value = format_plural($value, $field_handler->options['format_plural_singular'], $field_handler->options['format_plural_plural']);
     }
-    if (empty($value)) {
+    if (!isset($value)) {
       return '';
     }
     $prefix = isset($field_handler->options['prefix']) ? $field_handler->options['prefix'] : '';
