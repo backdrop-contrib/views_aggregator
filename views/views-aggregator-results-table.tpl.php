@@ -26,7 +26,7 @@
  * @ingroup views_templates
  */
 ?>
-<table <?php if ($classes): ?>class="<?php print $classes; ?>"<?php endif ?><?php print $attributes; ?>>
+<table <?php if ($classes): ?>class="<?php print "$classes table"; ?>"<?php endif ?><?php print $attributes; ?>>
   <?php if (!empty($title) || !empty($caption)) : ?>
     <caption><?php print $caption . $title; ?></caption>
   <?php endif; ?>
