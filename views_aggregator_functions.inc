@@ -187,7 +187,7 @@ function views_aggregator_group_and_compress($view_results, $field_handler, $cas
  * @param array $groups
  *   an array of groups of rows, each group indexed by group value
  * @param object $field_handler
- *   the handler for the view column to find the minimum in
+ *   the handler for the view column to find the average in
  * @param int $precision_group
  *   the number of decimals, if specified
  * @param int $precision_column
@@ -389,7 +389,7 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
       $value = $math->evaluate($expression);
     }
   }
-  // Should we call number_format($value, $precision, $decimal, $separator)
+  // Should we call: number_format($value, $precision, $decimal, $separator) ?
   $values['column'] = $value;
   return $values;
 }
