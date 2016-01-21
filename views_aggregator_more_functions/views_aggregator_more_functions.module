@@ -69,7 +69,7 @@ function views_aggregator_percentage($groups, $field_handler, $arg_group, $arg_c
     $sum_column += $sum;
   }
   foreach ($groups as $group => $rows) {
-    $values[$group] = 100 * $values[$group] / $sum_column;
+    $values[$group] = ($sum_column == 0.0) ? '' : 100 * $values[$group] / $sum_column;
   }
   $values['column'] = 100;
   return $values;
