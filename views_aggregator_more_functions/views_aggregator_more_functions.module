@@ -37,7 +37,7 @@ function views_aggregator_group_seq_number($groups, $field_handler = NULL, $star
   $values = array();
   $count = (!isset($start_value) || $start_value == '') ? 1 : (int) $start_value;
   foreach ($groups as $group => $rows) {
-    $values[$group] = $count++;
+      $values['column'] = $values[$group] = $count++;
   }
   return $values;
 }
