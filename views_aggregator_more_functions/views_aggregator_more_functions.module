@@ -13,7 +13,7 @@ function views_aggregator_more_functions_views_aggregation_functions_info() {
     // By edc1, see https://www.drupal.org/node/2299055
     'views_aggregator_group_seq_number' => array(
       'group' => t('Group sequence no. *'),
-      'column' => NULL,
+      'column' => t('Group count'),
       'is_renderable' => TRUE,
     ),
     'views_aggregator_percentage' => array(
