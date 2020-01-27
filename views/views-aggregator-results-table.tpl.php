@@ -72,7 +72,7 @@
             }
           ?>
             <td <?php if (!empty($td_class)): ?>class="<?php print $td_class; ?>"<?php endif ?>
-                <?php if (!empty($field_attributes[$field][$r])): ?><?php print drupal_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
+                <?php if (!empty($field_attributes[$field][$r])): ?><?php print backdrop_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
               <?php print $content; ?>
             </td>
           <?php endforeach ?>

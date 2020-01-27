@@ -16,7 +16,7 @@ function views_aggregator_help($path, $arg) {
     case 'admin/help#views_aggregator':
       return t('See the <a href="@README">README</a> for View configuration instructions and examples or browse the <a href="@project">project</a> support queue.', array(
         '@project' => url('http://drupal.org/project/views_aggregator'),
-        '@README' => url(drupal_get_path('module', 'views_aggregator') . '/README.txt'),
+        '@README' => url(backdrop_get_path('module', 'views_aggregator') . '/README.txt'),
       ));
   }
 }
@@ -25,7 +25,7 @@ function views_aggregator_help($path, $arg) {
  * Implements hook_theme().
  */
 function views_aggregator_theme() {
-  $base_path = drupal_get_path('module', 'views_aggregator');
+  $base_path = backdrop_get_path('module', 'views_aggregator');
   $themes = array(
     'views_aggregator_plugin_style_table' => array(
       // Pass $form to theme_views_aggregator_plugin_style_table($vars)
@@ -43,8 +43,17 @@ function views_aggregator_theme() {
 function views_aggregator_views_api() {
   return array(
     'api' => views_api_version(),
-    'path' => drupal_get_path('module', 'views_aggregator') . '/views',
+    'path' => backdrop_get_path('module', 'views_aggregator') . '/views',
   );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function views_aggregator_autoload_info() {
+ return array(
+  'views_aggregator_plugin_style_table' => 'views/views_aggregator_plugin_style_table.inc',
+ );
 }
 
 /**
@@ -58,7 +67,7 @@ function views_aggregator_views_api() {
  */
 function views_aggregator_get_aggregation_functions_info($name = NULL) {
 
-  $aggregation_functions = &drupal_static(__FUNCTION__);
+  $aggregation_functions = &backdrop_static(__FUNCTION__);
 
   if (empty($aggregation_functions)) {
     // Collect aggregations functions defined in other modules via their
@@ -70,7 +79,7 @@ function views_aggregator_get_aggregation_functions_info($name = NULL) {
 
     // Let other modules alter the aggregation functions by implementing
     // hook_views_aggregation_functions_info_alter().
-    drupal_alter('views_aggregation_functions_info', $aggregation_functions);
+    backdrop_alter('views_aggregation_functions_info', $aggregation_functions);
   }
   // $aggregation_functions = (array)$aggregation_functions;
   if (empty($name)) {
@@ -151,6 +160,6 @@ function template_preprocess_views_aggregator_results_table(&$vars) {
     }
   }
 
-  $vars['attributes_array']['id'] = drupal_html_id('views_aggregator_datatable');
+  $vars['attributes_array']['id'] = backdrop_html_id('views_aggregator_datatable');
   template_preprocess_views_view_table($vars);
 }

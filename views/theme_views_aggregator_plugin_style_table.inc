@@ -13,7 +13,7 @@
 function theme_views_aggregator_plugin_style_table($variables) {
   $form = $variables['form'];
 
-  $output = drupal_render($form['description_markup']);
+  $output = backdrop_render($form['description_markup']);
 
   // Note these are currently in the Views Calc rather than Views table order.
   $header = array(
@@ -44,29 +44,29 @@ function theme_views_aggregator_plugin_style_table($variables) {
   $rows = array();
   foreach (element_children($form['columns']) as $id) {
     $row = array();
-    $row[] = drupal_render($form['info'][$id]['name']);
-    $row[] = drupal_render($form['info'][$id]['align']);
+    $row[] = backdrop_render($form['info'][$id]['name']);
+    $row[] = backdrop_render($form['info'][$id]['align']);
     $row[]
-      = drupal_render($form['info'][$id]['has_aggr'])
-      . drupal_render($form['info'][$id]['aggr'])
-      . drupal_render($form['info'][$id]['aggr_par']);
+      = backdrop_render($form['info'][$id]['has_aggr'])
+      . backdrop_render($form['info'][$id]['aggr'])
+      . backdrop_render($form['info'][$id]['aggr_par']);
     $row[]
-      = drupal_render($form['info'][$id]['has_aggr_column'])
-      . drupal_render($form['info'][$id]['aggr_column'])
-      . drupal_render($form['info'][$id]['aggr_par_column']);
-    $row[] = drupal_render($form['columns'][$id]);
-    $row[] = drupal_render($form['info'][$id]['separator']);
+      = backdrop_render($form['info'][$id]['has_aggr_column'])
+      . backdrop_render($form['info'][$id]['aggr_column'])
+      . backdrop_render($form['info'][$id]['aggr_par_column']);
+    $row[] = backdrop_render($form['columns'][$id]);
+    $row[] = backdrop_render($form['info'][$id]['separator']);
     if (!empty($form['info'][$id]['sortable'])) {
       $row[] = array(
-        'data' => drupal_render($form['info'][$id]['sortable']),
+        'data' => backdrop_render($form['info'][$id]['sortable']),
         'align' => 'center',
       );
       $row[] = array(
-        'data' => drupal_render($form['default'][$id]),
+        'data' => backdrop_render($form['default'][$id]),
         'align' => 'center',
       );
       $row[] = array(
-        'data' => drupal_render($form['info'][$id]['default_sort_order']),
+        'data' => backdrop_render($form['info'][$id]['default_sort_order']),
         'align' => 'center',
       );
     }
@@ -76,7 +76,7 @@ function theme_views_aggregator_plugin_style_table($variables) {
       $row[] = '';
     }
     $row[] = array(
-      'data' => drupal_render($form['info'][$id]['empty_column']),
+      'data' => backdrop_render($form['info'][$id]['empty_column']),
       'align' => 'center',
     );
     $rows[] = $row;
@@ -92,12 +92,12 @@ function theme_views_aggregator_plugin_style_table($variables) {
     '',
     array(
       'align' => 'center',
-      'data' => drupal_render($form['default'][-1]),
+      'data' => backdrop_render($form['default'][-1]),
     ),
     '',
     '',
   );
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
-  $output .= drupal_render_children($form);
+  $output .= backdrop_render_children($form);
   return $output;
 }

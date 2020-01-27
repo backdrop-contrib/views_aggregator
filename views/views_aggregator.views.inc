@@ -9,7 +9,7 @@
  * Implements hook_views_plugins().
  */
 function views_aggregator_views_plugins() {
-  $base_path = drupal_get_path('module', 'views_aggregator');
+  $base_path = backdrop_get_path('module', 'views_aggregator');
   $plugins['style']['views_aggregator'] = array(
     'title' => t('Table with aggregation options'),
     'help' => t('Creates a tabular UI for the user to define aggregation functions.'),

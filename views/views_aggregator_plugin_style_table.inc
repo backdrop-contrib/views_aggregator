@@ -639,7 +639,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       }
     }
     $rendered_value = implode(empty($separator) ? ' - ' : $separator, $rendered_values);
-    return is_array($rendered_value) ? drupal_render($rendered_value) : $rendered_value;
+    return is_array($rendered_value) ? backdrop_render($rendered_value) : $rendered_value;
   }
 
   /**
@@ -724,7 +724,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       $rendered_values[] = empty($rendered) ? $new_value : $rendered;
     }
     $rendered_value = implode(empty($separator) ? ' - ' : $separator, $rendered_values);
-    return is_array($rendered_value) ? drupal_render($rendered_value) : $rendered_value;
+    return is_array($rendered_value) ? backdrop_render($rendered_value) : $rendered_value;
   }
 
   /**
@@ -817,8 +817,8 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     // Note that when a 2nd copy of a field is used in the View, e.g.
     // field_price_1, we refer back to the base field name, i.e. field_price
     $last_underscore = strrpos($real_field_name, '_');
-    if ((int)drupal_substr($real_field_name, $last_underscore + 1)) {
-      $field_name = drupal_substr($real_field_name, 0, $last_underscore);
+    if ((int)backdrop_substr($real_field_name, $last_underscore + 1)) {
+      $field_name = backdrop_substr($real_field_name, 0, $last_underscore);
     }
     $_field_data = $row->_field_data[$field_alias];
     if ($this->has_no_suitable_renderer($_field_data, $field_name)) {
@@ -880,7 +880,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       'label' => 'hidden',
     );
     $render_array = field_view_field($entity_type, $entity, $field_name, $display, $lang);
-    return drupal_render($render_array);
+    return backdrop_render($render_array);
   }
 
   protected function has_no_suitable_renderer($field_data, $field_name) {
