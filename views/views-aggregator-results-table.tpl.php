@@ -26,7 +26,7 @@
  * @ingroup views_templates
  */
 ?>
-<table <?php if ($classes): ?>class="<?php print "$classes table"; ?>"<?php endif ?><?php print $attributes; ?>>
+<table <?php if ($classes): ?>class="<?php print implode(' ', $classes) . " table"; ?>"<?php endif ?><?php print backdrop_attributes($attributes); ?>>
   <?php if (!empty($title) || !empty($caption)) : ?>
     <caption><?php print $caption . $title; ?></caption>
   <?php endif; ?>
@@ -39,7 +39,7 @@
               $hclasses .= " $grouping_field_class";
             }
           ?>
-            <th <?php if (!empty($hclasses)): ?>class="<?php print $hclasses; ?>"<?php endif ?>>
+            <th <?php if (!empty($hclasses)): ?>class="<?php print implode(' ', $hclasses); ?>"<?php endif ?>>
               <?php print $label; ?>
             </th>
           <?php endforeach ?>
@@ -71,7 +71,7 @@
               $td_class .= " $grouping_field_class";
             }
           ?>
-            <td <?php if (!empty($td_class)): ?>class="<?php print $td_class; ?>"<?php endif ?>
+            <td <?php if (!empty($td_class)): ?>class="<?php print implode(' ', $td_class); ?>"<?php endif ?>
                 <?php if (!empty($field_attributes[$field][$r])): ?><?php print backdrop_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
               <?php print $content; ?>
             </td>
@@ -90,7 +90,7 @@
               $fclasses .= " $grouping_field_class";
             }
         ?>
-          <th <?php if (!empty($fclasses)): ?>class="<?php print $fclasses; ?>"<?php endif ?>>
+          <th <?php if (!empty($fclasses)): ?>class="<?php print implode(' ', $fclasses); ?>"<?php endif ?>>
             <?php print isset($totals[$field]) ? $totals[$field] : ''; ?>
           </th>
         <?php endforeach ?>
