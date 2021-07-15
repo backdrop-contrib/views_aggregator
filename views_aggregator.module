@@ -21,6 +21,17 @@ function views_aggregator_help($path, $arg) {
   }
 }
 
+/** 
+ * Implements hook_config_info().
+ */
+function views_aggregator_config_info() {
+  $prefixes['views_aggregator.settings'] = array(
+    'label' => t('Views Aggregator settings'),
+    'group' => t('Views Aggregator'),
+  );
+  return $prefixes;
+}
+
 /**
  * Implements hook_theme().
  */
