@@ -753,9 +753,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     elseif (is_float($raw_value)) {
       $precision = isset($this->options['column_aggregation']['precision'])
         ? (int) $this->options['column_aggregation']['precision']
-        : (int) variable_get('views_aggregator_def_precision', 2);
-      $decimal = variable_get('views_aggregator_def_decimal'); // '.'
-      $separator = variable_get('views_aggregator_def_separator'); // ','
+        : (int) config_get('views_aggregator.settings', 'views_aggregator_def_precision');
+      $decimal = config_get('views_aggregator.settings', 'views_aggregator_def_decimal'); // '.'
+      $separator = config_get('views_aggregator.settings', 'views_aggregator_def_separator'); // ','
       $value = number_format($raw_value, $precision, $decimal, $separator);
     }
     else {
