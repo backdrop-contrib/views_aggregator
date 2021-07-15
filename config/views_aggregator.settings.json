@@ -1,0 +1,6 @@
+{
+    "_config_name": "views_aggregator.settings",
+    "views_aggregator_def_precision": 2,
+    "views_aggregator_def_decimal": ".",
+    "views_aggregator_def_separator": ","
+}

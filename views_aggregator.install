@@ -1,0 +1,12 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the views_aggregator module.
+ */
+
+/** 
+ * Adds new config file with special configurations to the active config directory
+ */
+function views_aggregator_update_1102() {
+  config_install_default_config('views_aggregator');
+}
