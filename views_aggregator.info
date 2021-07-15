@@ -1,7 +1,11 @@
 type = module
 name = Views Aggregator Plus
 description = A Views plugin that operates on the results <em>after</em> the database query has run, thus offering aggregation functions not otherwise possible.
-configure = admin/config/content/views_aggregator
 package = Views
 dependencies[] = views
 backdrop = 1.x
+
+; Added by Backdrop CMS packaging script on 2020-11-14
+project = views_aggregator
+version = 1.x-1.0.1
+timestamp = 1605375530
