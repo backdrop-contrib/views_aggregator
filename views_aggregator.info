@@ -4,8 +4,3 @@ description = A Views plugin that operates on the results <em>after</em> the dat
 package = Views
 dependencies[] = views
 backdrop = 1.x
-
-; Added by Backdrop CMS packaging script on 2020-11-14
-project = views_aggregator
-version = 1.x-1.0.1
-timestamp = 1605375530
