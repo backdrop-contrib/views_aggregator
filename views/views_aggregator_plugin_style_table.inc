@@ -720,6 +720,7 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     $new_values = is_array($new_values) ? $new_values : array($new_values);
     foreach ($new_values as $new_value) {
       $submission->data[$cid][$row_num] = $new_value;
+      $field_handler->view->row_index = 0; // This is a dummy value to avoid a warning when rewriting output of a summed column.
       $rendered = trim($field_handler->advanced_render($result_row));
       $rendered_values[] = empty($rendered) ? $new_value : $rendered;
     }
