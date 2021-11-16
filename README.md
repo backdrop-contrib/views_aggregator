@@ -5,14 +5,14 @@ aggregation, you only have limited options at your disposal. That is where this
 module comes in. Unlike Views and ViewsCalc, this module:
 - enumerates group members (see https://drupal.org/node/1300900)
 - produces tallies (textual histograms, see http://drupal.org/node/1256716)
-- can aggregate on ViewsPHP code-snippets
+- can aggregate on Views PHP code-snippets (note: Views PHP has not been ported to Backdrop, and it may never be given the security risks it presents)
 - can filter out rows on regular expressions (regexp)
 - can aggregate across entire columns (e.g show column data range at the top)
 - lets you add your own custom aggregation functions to the existing set
 - aggregation functions can take parameters, as currently employed by "Filter
   rows", "Count" and "Label"
 - on Views of type "Webform submissions" the module supports the field "Webform
-  submission data: Value" (requires Webform 7.x-4.x)
+  submission data: Value"
 
 Basics Recap: what is aggregation again?
 ----------------------------------------
@@ -60,21 +60,6 @@ IT (2)      |AcquiB, PreviousBest|  $30,000,000 |
 Totals      |                  5 | $695,000,000 |
 ------------------------------------------------
 
-But that's just the beginning. Remember, you can aggregate on ViewsPHP
-expressions, so the possibilities are endless! Say you have a content type
-"event" that has a date range field on it with both start and end components
-active. Let's say its machine name is "field_duration". The code snippet below
-entered in the "Output code" area of a Views PHP field will output in Views for
-each event whether it is in progress, closed or not started yet.
-```
-<?php
-  $start_date = strtotime($data->field_field_duration[0]['raw']['value']);
-  $end_date   = strtotime($data->field_field_duration[0]['raw']['value2']);
-  echo time() < $start_date ? 'not started' : (time() < $end_date ? 'underway' : 'closed');
-?>
-```
-Next you can use VAgg+ to group on the expression and count or enumerate the
-event titles in each of these categories.
 
 HOW TO USE
 ----------
@@ -145,44 +130,9 @@ LIMITATIONS
   displays and normal Views do not support sorting on Math Expressions.
 - When you apply two aggregation functions on the same field, the 2nd function
   gets applied on the results of the first -- not always what you want.
-- Grouping, tallying and other functions may not work correctly when you have
-  the "Theme Developer" module enabled.
+- Grouping, tallying and other functions may not work correctly when you enable
+  the "Theme debug" option provided by the Devel module.
 
-TIPS FOR USING VIEWS PHP MODULE
--------------------------------
-Use "Output code", not "Value code", as in the "Value code" area few Views
-results are available. Here are some examples of the syntax to use for various
-field types for access in the "Output code" text area. Note that to display
-these values you need to put "echo" in front of the expression and place the
-``<?php and ?>`` "brackets" around everything.
-
-
-**General fields, say a field named "Total", machine name: "field_total"**
-
-Raw value: 
-
-`$data->field_field_total[0]['raw']['value'] // 1000`  
-Rendered value (i.e. marked-up for display):  
-`$data->field_field_total[0]['rendered']['#markup'] // $ 1,000.00`
-
-
-**Dates, machine name "field_duration" (start & end dates)**
-
-Raw start:  
-``$data->field_field_duration[0]['raw']['value']// 2013-06-02 00:00:00``  
-Raw end:  
-``$data->field_field_duration[0]['raw']['value2'] // 2013-06-04 00:00:00``
-
-Rendered:  
-``$data->field_field_duration[0]['rendered']['#markup'];  //"Sun 02-Jun-2013 to Wed 04-Jun-2013"``
-
-**Taxonomy terms, machine name: "field_industry"**
-
-Raw:  
-``$data->field_field_industry[0]['raw']['tid']``
-
-Rendered:  
-``$data->field_field_industry[0]['rendered']['#title']``
 
 ACKNOWLEDGMENT
 --------------
@@ -191,13 +141,14 @@ authors and contributors done on that module is gratefully acknowledged.
 
 REFs
 ----
-https://drupal.org/node/1219356#comment-4782582
-https://drupal.org/node/1219356#comment-6909160
-https://drupal.org/node/1300900
-https://drupal.org/node/1791796
-https://drupal.org/node/1140896#comment-7657061
+- https://drupal.org/node/1219356#comment-4782582
+- https://drupal.org/node/1219356#comment-6909160
+- https://drupal.org/node/1300900
+- https://drupal.org/node/1791796
+- https://drupal.org/node/1140896#comment-7657061
 
 CREDITS
 -------
-**Current Backport version maintainer:** [argiepiano](https://github.com/argiepiano)  
-**Original Drupal module supporting organizations:** [flink](https://www.drupal.org/flink) all development and support
+- Current Backport version maintainer: [argiepiano](https://github.com/argiepiano)  
+- Original Drupal module supporting organizations:
+  - [flink](https://www.drupal.org/flink) all development and support
