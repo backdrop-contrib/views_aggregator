@@ -239,7 +239,17 @@ function views_aggregator_average($groups, $field_handler, $precision_group, $pr
 function views_aggregator_count($groups, $field_handler, $group_regexp = NULL, $column_regexp = NULL) {
   $values = array();
   $count_column = 0;
-  $regexp = isset($group_regexp) ? $group_regexp : $column_regexp;
+
+  if (isset($group_regexp)) {
+    $regexp = $group_regexp;
+  }
+  elseif (isset($column_regexp)) {
+    $regexp = $column_regexp;
+  }
+  else {
+    $regexp = '';
+  }
+
   if (preg_match('/[a-zA-Z0-9_]+/', $regexp)) {
     // Interpret omitted brace chars in the regexp as a verbatim text match.
     $regexp = "/$regexp/";
