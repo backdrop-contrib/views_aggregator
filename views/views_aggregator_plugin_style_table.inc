@@ -630,6 +630,9 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
       if ($this->is_standard_field($field_handler)) {
         $rendered_values[] = $this->render_from_raw($field_handler, $row_num, $new_value);
       }
+      elseif ($this->is_date_field($field_handler)) {
+        $rendered_values[] = $this->render_date($field_handler, $new_value);
+      }
       elseif ($this->is_commerce_currency_amount($field_handler)) {
         $rendered_values[] = $this->render_from_raw_scalar($field_handler, $row_num, $new_value);
       }
@@ -652,6 +655,10 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    */
   protected function is_standard_field($field_handler) {
     return is_a($field_handler, 'views_handler_field_field');
+  }
+
+  protected function is_date_field($field_handler) {
+    return is_a($field_handler, 'views_handler_field_date');
   }
 
   protected function is_numeric_field($field_handler) {
@@ -726,6 +733,64 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
     }
     $rendered_value = implode(empty($separator) ? ' - ' : $separator, $rendered_values);
     return is_array($rendered_value) ? backdrop_render($rendered_value) : $rendered_value;
+  }
+
+  /**
+   * Format a raw timestamp according to the supplied date handler settings.
+   *
+   * @param object $field_handler
+   * @param int $value
+   *
+   * @return string, date formatted according to Views handler settings
+   *
+   * Note: this was taken in part from views_handler_field_date::render($values)
+   */
+  function render_date($field_handler, $value) {
+    $format = $field_handler->options['date_format'];
+    if (in_array($format, array('custom', 'raw time ago', 'time ago', 'today time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'))) {
+      $custom_format = $field_handler->options['custom_date_format'];
+    }
+
+    $timezone = !empty($field_handler->options['timezone']) ? $field_handler->options['timezone'] : NULL;
+    $time_diff = REQUEST_TIME - $value; // will be positive for a datetime in the past (ago), and negative for a datetime in the future (hence)
+    switch ($format) {
+      case 'raw time ago':
+        return format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2);
+      case 'time ago':
+        return t('%time ago', array('%time' => format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2)));
+      case 'today time ago':
+        $second_format = $field_handler->options['second_date_format'];
+        $second_custom_format = $field_handler->options['second_date_format_custom'];
+        if (format_date(REQUEST_TIME, 'custom', 'Y-m-d', $timezone) == format_date($value, 'custom', 'Y-m-d', $timezone)) {
+          return t('%time ago', array('%time' => format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2)));
+        }
+        elseif ($second_format == 'custom') {
+          if ($second_custom_format == 'r') {
+            return format_date($value, $second_format, $second_custom_format, $timezone, 'en');
+          }
+          return format_date($value, $second_format, $second_custom_format, $timezone);
+        }
+        else {
+          return format_date($value, $field_handler->options['second_date_format'], '', $timezone);
+        }
+      case 'raw time hence':
+        return format_interval(-$time_diff, is_numeric($custom_format) ? $custom_format : 2);
+      case 'time hence':
+        return t('%time hence', array('%time' => format_interval(-$time_diff, is_numeric($custom_format) ? $custom_format : 2)));
+      case 'raw time span':
+        return ($time_diff < 0 ? '-' : '') . format_interval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2);
+      case 'inverse time span':
+        return ($time_diff > 0 ? '-' : '') . format_interval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2);
+      case 'time span':
+        return t(($time_diff < 0 ? '%time hence' : '%time ago'), array('%time' => format_interval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2)));
+      case 'custom':
+        if ($custom_format == 'r') {
+          return format_date($value, $format, $custom_format, $timezone, 'en');
+        }
+        return format_date($value, $format, $custom_format, $timezone);
+      default:
+        return format_date($value, $format, '', $timezone);
+    }
   }
 
   /**
