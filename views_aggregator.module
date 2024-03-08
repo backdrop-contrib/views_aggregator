@@ -8,19 +8,6 @@
 
 module_load_include('inc', 'views_aggregator', 'views_aggregator_functions');
 
-/**
- * Implements hook_help().
- */
-function views_aggregator_help($path, $arg) {
-  switch ($path) {
-    case 'admin/help#views_aggregator':
-      return t('See the <a href="@README">README</a> for View configuration instructions and examples or browse the <a href="@project">project</a> support queue.', array(
-        '@project' => url('http://drupal.org/project/views_aggregator'),
-        '@README' => url(backdrop_get_path('module', 'views_aggregator') . '/README.txt'),
-      ));
-  }
-}
-
 /** 
  * Implements hook_config_info().
  */
