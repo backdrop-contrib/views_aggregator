@@ -51,6 +51,7 @@ function views_aggregator_views_api() {
 function views_aggregator_autoload_info() {
  return array(
   'views_aggregator_plugin_style_table' => 'views/views_aggregator_plugin_style_table.inc',
+  'ViewsAggregatorMathExpr' => 'includes/ViewsAggregatorMathExpr.inc',
  );
 }
 

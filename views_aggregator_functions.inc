@@ -383,8 +383,6 @@ function _views_aggregator_enumerate($groups, $field_handler, $separator_group, 
 function views_aggregator_expression($groups, $field_handler, $group_exp = NULL, $column_exp = NULL) {
   $values = array();
 
-  ctools_include('math-expr');
-
   // This is meaningful only if some other column aggregation function took
   // place before this one.
   $this_item = array('raw' => array('value' => $field_handler->last_render));
@@ -393,7 +391,7 @@ function views_aggregator_expression($groups, $field_handler, $group_exp = NULL,
   $tokens = array_map('floatval', $field_handler->get_render_tokens($this_item));
   $value = strtr($column_exp, $tokens);
   $expressions = explode(';', $value);
-  $math = new ctools_math_expr();
+  $math = new ViewsAggregatorMathExpr();
   foreach ($expressions as $expression) {
     if ($expression !== '') {
       $value = $math->evaluate($expression);
