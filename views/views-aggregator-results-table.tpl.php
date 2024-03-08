@@ -34,12 +34,12 @@
       <?php if (!empty($header)) : ?>
         <tr>
           <?php foreach ($header as $field => $label): 
-            $hclasses = isset($header_classes[$field]) ? implode(' ', $header_classes[$field]) : '';
+            $hclasses = isset($header_classes[$field]) ? $header_classes[$field] : array();
             if ($field === $grouping_field) {
-              $hclasses .= " $grouping_field_class";
+              $hclasses[] = $grouping_field_class;
             }
           ?>
-            <th <?php if (!empty($hclasses)): ?>class="<?php print $hclasses; ?>"<?php endif ?>>
+            <th <?php if (!empty($hclasses)): ?>class="<?php print implode(' ', $hclasses); ?>"<?php endif ?>>
               <?php print $label; ?>
             </th>
           <?php endforeach ?>
@@ -50,12 +50,12 @@
           <?php
             // Use order of the row fields to output the totals likewise.
             foreach (array_keys(reset($rows)) as $field):
-              $hclasses = isset($header_classes[$field]) ? $header_classes[$field] : '';
+              $hclasses = isset($header_classes[$field]) ? $header_classes[$field] : array();
               if ($field === $grouping_field) {
-                $hclasses .= " $grouping_field_class";
+                $hclasses[] = $grouping_field_class;
               }
           ?>
-            <th <?php if (!empty($hclasses)): ?>class="<?php print $hclasses; ?>"<?php endif ?>>
+            <th <?php if (!empty($hclasses)): ?>class="<?php print implode(' ', $hclasses); ?>"<?php endif ?>>
               <?php print isset($totals[$field]) ? $totals[$field] : ''; ?>
             </th>
           <?php endforeach ?>
@@ -66,12 +66,12 @@
       <?php foreach ($rows as $r => $row): ?>
         <tr <?php if (!empty($row_classes[$r])): ?>class="<?php print implode(' ', $row_classes[$r]); ?>"<?php endif ?>>
           <?php foreach ($row as $field => $content): 
-            $td_class = empty($field_classes[$field][$r]) ? '' : implode(' ', $field_classes[$field][$r]);
+            $td_class = empty($field_classes[$field][$r]) ? array() : $field_classes[$field][$r];
             if ($field === $grouping_field) {
-              $td_class .= " $grouping_field_class";
+              $td_class[] = $grouping_field_class;
             }
           ?>
-            <td <?php if (!empty($td_class)): ?>class="<?php print $td_class; ?>"<?php endif ?>
+            <td <?php if (!empty($td_class)): ?>class="<?php print implode(' ', $td_class); ?>"<?php endif ?>
                 <?php if (!empty($field_attributes[$field][$r])): ?><?php print backdrop_attributes($field_attributes[$field][$r]); ?><?php endif ?>>
               <?php print $content; ?>
             </td>
@@ -85,9 +85,9 @@
         <?php
           // Use order of the row fields to output the totals likewise.
           foreach (array_keys(reset($rows)) as $field):
-            $fclasses = isset($field_classes[$field]) ? reset($field_classes[$field]) : '';
+            $fclasses = isset($field_classes[$field]) ? reset($field_classes[$field]) : array();
             if ($field === $grouping_field) {
-              $fclasses .= " $grouping_field_class";
+              $fclasses[] = $grouping_field_class;
             }
         ?>
           <th <?php if (!empty($fclasses)): ?>class="<?php print implode(' ', $fclasses); ?>"<?php endif ?>>
