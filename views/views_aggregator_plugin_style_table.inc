@@ -746,8 +746,12 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
    * Note: this was taken in part from views_handler_field_date::render($values)
    */
   function render_date($field_handler, $value) {
+    if (!is_numeric($value)) {
+      // If the value isn't numeric, assume it's an SQL DATETIME.
+      $value = strtotime($value);
+    }
     $format = $field_handler->options['date_format'];
-    if (in_array($format, array('custom', 'raw time ago', 'time ago', 'today time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'))) {
+    if (in_array($format, array('custom', 'raw time ago', 'time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'))) {
       $custom_format = $field_handler->options['custom_date_format'];
     }
 
@@ -758,21 +762,6 @@ class views_aggregator_plugin_style_table extends views_plugin_style_table {
         return format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2);
       case 'time ago':
         return t('%time ago', array('%time' => format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2)));
-      case 'today time ago':
-        $second_format = $field_handler->options['second_date_format'];
-        $second_custom_format = $field_handler->options['second_date_format_custom'];
-        if (format_date(REQUEST_TIME, 'custom', 'Y-m-d', $timezone) == format_date($value, 'custom', 'Y-m-d', $timezone)) {
-          return t('%time ago', array('%time' => format_interval($time_diff, is_numeric($custom_format) ? $custom_format : 2)));
-        }
-        elseif ($second_format == 'custom') {
-          if ($second_custom_format == 'r') {
-            return format_date($value, $second_format, $second_custom_format, $timezone, 'en');
-          }
-          return format_date($value, $second_format, $second_custom_format, $timezone);
-        }
-        else {
-          return format_date($value, $field_handler->options['second_date_format'], '', $timezone);
-        }
       case 'raw time hence':
         return format_interval(-$time_diff, is_numeric($custom_format) ? $custom_format : 2);
       case 'time hence':
