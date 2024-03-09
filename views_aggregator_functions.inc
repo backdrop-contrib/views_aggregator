@@ -73,6 +73,7 @@ function views_aggregator_views_aggregation_functions_info() {
     'views_aggregator_sum' => array(
       'group' => t('Sum'),
       'column' => t('Sum'),
+      'is_renderable' => FALSE,
     ),
     'views_aggregator_tally' => array(
       'group' => t('Tally members *'),
